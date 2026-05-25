@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { 
   cartItems, 
   isCartOpen, 
@@ -9,28 +9,108 @@ import {
   totalItemsCount, 
   formattedTotalCartPrice 
 } from '../store/cart.js'
+import { currentLang, setLang, t } from '../store/lang.js'
+
+// Import assets for search results preview
+import noiseImg from '../assets/images/event_noise_parade.png'
+import southSideImg from '../assets/images/event_south_side.png'
+import undercityImg from '../assets/images/event_undercity.png'
+import teeImg from '../assets/images/merch_tee.png'
+import hoodieImg from '../assets/images/merch_hoodie.png'
+import capImg from '../assets/images/merch_cap.png'
+import bagImg from '../assets/images/merch_bag.png'
 
 const isMobileMenuOpen = ref(false)
+const isLangOpen = ref(false)
+const isSearchOpen = ref(false)
+const searchQuery = ref('')
+const searchInput = ref(null)
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
 const handleCheckout = () => {
-  alert('Order simulation completed! Thank you for supporting the scene. 🤘')
+  alert(t('checkoutAlert'))
   cartItems.value = []
   isCartOpen.value = false
 }
 
-const navLinks = [
-  { name: 'HOME', href: '#home' },
-  { name: 'MERCH', href: '#merch-page' },
-  { name: 'EVENTS', href: '#events-page' },
-  { name: 'ABOUT', href: '#about' },
-  { name: 'CONTACT', href: '#contact' }
+const selectLanguage = (lang) => {
+  setLang(lang)
+  isLangOpen.value = false
+}
+
+const navLinks = computed(() => [
+  { name: t('home'), href: '#home' },
+  { name: t('merch'), href: '#merch-page' },
+  { name: t('events'), href: '#events-page' }
+])
+
+const searchEvents = [
+  { id: 1, title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
+  { id: 2, title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
+  { id: 3, title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
 ]
 
+const searchProducts = [
+  { id: 1, name: 'DRS LOGO TEE', price: 'Rp 149.000', category: 'Pakaian', image: teeImg },
+  { id: 2, name: 'DRS HOODIE', price: 'Rp 299.000', category: 'Pakaian', image: hoodieImg },
+  { id: 3, name: 'DRS CAP', price: 'Rp 129.000', category: 'Aksesoris', image: capImg },
+  { id: 4, name: 'DRS TOTE BAG', price: 'Rp 99.000', category: 'Aksesoris', image: bagImg }
+]
+
+const filteredSearchEvents = computed(() => {
+  if (!searchQuery.value.trim()) return []
+  const query = searchQuery.value.toLowerCase().trim()
+  return searchEvents.filter(e => 
+    e.title.toLowerCase().includes(query) || 
+    e.venue.toLowerCase().includes(query) || 
+    e.category.toLowerCase().includes(query)
+  )
+})
+
+const filteredSearchProducts = computed(() => {
+  if (!searchQuery.value.trim()) return []
+  const query = searchQuery.value.toLowerCase().trim()
+  return searchProducts.filter(p => 
+    p.name.toLowerCase().includes(query) || 
+    p.category.toLowerCase().includes(query)
+  )
+})
+
 const currentHash = ref(window.location.hash || '#home')
+
+const isTabActive = (href) => {
+  if (href === '#home') {
+    return currentHash.value === '#home' || currentHash.value === '' || currentHash.value === '#'
+  }
+  return currentHash.value === href
+}
+
+const handleTabClick = (href) => {
+  isMobileMenuOpen.value = false
+  if (href === '#merch') {
+    window.location.hash = '#home'
+    setTimeout(() => {
+      const el = document.getElementById('merch')
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  } else {
+    window.location.hash = href
+  }
+}
+
+watch(isSearchOpen, (open) => {
+  if (open) {
+    document.body.style.overflow = 'hidden'
+    setTimeout(() => {
+      searchInput.value?.focus()
+    }, 100)
+  } else {
+    document.body.style.overflow = ''
+  }
+})
 
 onMounted(() => {
   window.addEventListener('hashchange', () => {
@@ -66,6 +146,59 @@ onMounted(() => {
 
       <!-- Right Action Items -->
       <div class="navbar-actions">
+        <!-- Search Button (Desktop) -->
+        <button class="search-btn desktop-only" @click="isSearchOpen = true" aria-label="Search">
+          <svg class="search-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+
+        <!-- Language Selector Accordion/Card (Desktop) -->
+        <div class="lang-selector-wrapper desktop-only">
+          <button class="lang-btn" @click="isLangOpen = !isLangOpen" aria-label="Toggle Language">
+            <span class="flag-icon-main">
+              <!-- Indonesia Flag -->
+              <svg v-if="currentLang === 'id'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="22" height="15" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);">
+                <rect width="24" height="8" fill="#E22026"/>
+                <rect y="8" width="24" height="8" fill="#FFFFFF"/>
+              </svg>
+              <!-- English Flag (UK) -->
+              <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" width="22" height="15" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);">
+                <rect width="50" height="30" fill="#012169"/>
+                <path d="M0 0 L50 30 M50 0 L0 30" stroke="#fff" stroke-width="6"/>
+                <path d="M0 0 L50 30 M50 0 L0 30" stroke="#C8102E" stroke-width="4"/>
+                <path d="M25 0 V30 M0 15 H50" stroke="#fff" stroke-width="10"/>
+                <path d="M25 0 V30 M0 15 H50" stroke="#C8102E" stroke-width="6"/>
+              </svg>
+            </span>
+          </button>
+          <transition name="fade">
+            <div v-if="isLangOpen" class="lang-dropdown-card">
+              <button class="lang-option" :class="{ active: currentLang === 'id' }" @click="selectLanguage('id')">
+                <span class="flag-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="18" height="12" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);">
+                    <rect width="24" height="8" fill="#E22026"/>
+                    <rect y="8" width="24" height="8" fill="#FFFFFF"/>
+                  </svg>
+                </span>
+                <span class="lang-text-label">Indonesia (ID)</span>
+              </button>
+              <button class="lang-option" :class="{ active: currentLang === 'en' }" @click="selectLanguage('en')">
+                <span class="flag-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" width="18" height="12" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);">
+                    <rect width="50" height="30" fill="#012169"/>
+                    <path d="M0 0 L50 30 M50 0 L0 30" stroke="#fff" stroke-width="6"/>
+                    <path d="M0 0 L50 30 M50 0 L0 30" stroke="#C8102E" stroke-width="4"/>
+                    <path d="M25 0 V30 M0 15 H50" stroke="#fff" stroke-width="10"/>
+                    <path d="M25 0 V30 M0 15 H50" stroke="#C8102E" stroke-width="6"/>
+                  </svg>
+                </span>
+                <span class="lang-text-label">English (EN)</span>
+              </button>
+            </div>
+          </transition>
+        </div>
+
         <!-- Cart -->
         <button class="cart-btn" aria-label="View Cart" @click="isCartOpen = !isCartOpen">
           <svg class="cart-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -75,9 +208,6 @@ onMounted(() => {
           </svg>
           <span class="cart-badge">{{ totalItemsCount }}</span>
         </button>
-
-        <!-- CTA Button -->
-        
 
         <!-- Mobile Menu Toggle -->
         <button class="mobile-toggle" @click="toggleMobileMenu" :class="{ 'is-active': isMobileMenuOpen }" aria-label="Toggle Menu">
@@ -98,7 +228,7 @@ onMounted(() => {
       <div v-if="isMobileMenuOpen" class="mobile-menu-sidebar">
         <!-- Sidebar Header -->
         <div class="sidebar-header">
-          <h3 class="sidebar-title">MENU</h3>
+          <h3 class="sidebar-title">{{ t('menu') }}</h3>
           <button class="close-btn" @click="isMobileMenuOpen = false" aria-label="Close Menu">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="close-icon">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -118,10 +248,59 @@ onMounted(() => {
                 {{ link.name }}
               </a>
             </li>
-            <li class="mobile-cta-li">
-              <button class="cta-btn mobile-cta" @click="isMobileMenuOpen = false">GET UPDATES</button>
-            </li>
+            
           </ul>
+
+          <!-- Accordion Language Selector (Mobile Sidebar Drawer) -->
+          <div class="mobile-lang-accordion-wrapper">
+            <button class="mobile-lang-trigger" @click="isLangOpen = !isLangOpen">
+              <span class="trigger-label">LANGUAGE</span>
+              <span class="active-flag-badge">
+                <!-- Indonesia Flag -->
+                <svg v-if="currentLang === 'id'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="16" height="11" style="border-radius: 1px; display: inline-block; vertical-align: middle; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15); margin-right: 4px;">
+                  <rect width="24" height="8" fill="#E22026"/>
+                  <rect y="8" width="24" height="8" fill="#FFFFFF"/>
+                </svg>
+                <!-- English Flag (UK) -->
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" width="16" height="11" style="border-radius: 1px; display: inline-block; vertical-align: middle; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15); margin-right: 4px;">
+                  <rect width="50" height="30" fill="#012169"/>
+                  <path d="M0 0 L50 30 M50 0 L0 30" stroke="#fff" stroke-width="6"/>
+                  <path d="M0 0 L50 30 M50 0 L0 30" stroke="#C8102E" stroke-width="4"/>
+                  <path d="M25 0 V30 M0 15 H50" stroke="#fff" stroke-width="10"/>
+                  <path d="M25 0 V30 M0 15 H50" stroke="#C8102E" stroke-width="6"/>
+                </svg>
+                {{ currentLang === 'id' ? 'ID' : 'EN' }}
+              </span>
+              <svg class="chevron-icon" :class="{ 'rotated': isLangOpen }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <transition name="slide-fade">
+              <div v-if="isLangOpen" class="mobile-lang-options-drawer">
+                <button class="mobile-lang-option" :class="{ active: currentLang === 'id' }" @click="selectLanguage('id'); isMobileMenuOpen = false">
+                  <span class="flag-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="18" height="12" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);">
+                      <rect width="24" height="8" fill="#E22026"/>
+                      <rect y="8" width="24" height="8" fill="#FFFFFF"/>
+                    </svg>
+                  </span>
+                  <span class="lang-text">Indonesia (ID)</span>
+                </button>
+                <button class="mobile-lang-option" :class="{ active: currentLang === 'en' }" @click="selectLanguage('en'); isMobileMenuOpen = false">
+                  <span class="flag-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" width="18" height="12" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);">
+                      <rect width="50" height="30" fill="#012169"/>
+                      <path d="M0 0 L50 30 M50 0 L0 30" stroke="#fff" stroke-width="6"/>
+                      <path d="M0 0 L50 30 M50 0 L0 30" stroke="#C8102E" stroke-width="4"/>
+                      <path d="M25 0 V30 M0 15 H50" stroke="#fff" stroke-width="10"/>
+                      <path d="M25 0 V30 M0 15 H50" stroke="#C8102E" stroke-width="6"/>
+                    </svg>
+                  </span>
+                  <span class="lang-text">English (EN)</span>
+                </button>
+              </div>
+            </transition>
+          </div>
         </div>
       </div>
     </transition>
@@ -135,7 +314,7 @@ onMounted(() => {
       <div v-if="isCartOpen" class="cart-sidebar">
         <!-- Sidebar Header -->
         <div class="sidebar-header">
-          <h3 class="sidebar-title">YOUR CART</h3>
+          <h3 class="sidebar-title">{{ t('yourCart') }}</h3>
           <button class="close-btn" @click="isCartOpen = false" aria-label="Close Cart">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="close-icon">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -149,8 +328,8 @@ onMounted(() => {
             <svg class="empty-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
-            <p>Your cart is empty.</p>
-            <button class="start-shopping-btn" @click="isCartOpen = false">START SHOPPING</button>
+            <p>{{ t('cartEmpty') }}</p>
+            <button class="start-shopping-btn" @click="isCartOpen = false">{{ t('startShopping') }}</button>
           </div>
 
           <div v-else class="cart-items-list">
@@ -182,13 +361,114 @@ onMounted(() => {
         <!-- Sidebar Footer -->
         <div v-if="cartItems.length > 0" class="sidebar-footer">
           <div class="total-row">
-            <span>SUBTOTAL</span>
+            <span>{{ t('subtotal') }}</span>
             <span class="total-price">{{ formattedTotalCartPrice }}</span>
           </div>
-          <p class="shipping-note">Taxes and shipping calculated at checkout.</p>
-          <button class="checkout-btn" @click="handleCheckout">PROCEED TO CHECKOUT</button>
+          <p class="shipping-note">{{ t('shippingNote') }}</p>
+          <button class="checkout-btn" @click="handleCheckout">{{ t('checkout') }}</button>
         </div>
       </div>
+    </transition>
+
+
+    <!-- Dropdown Search Bar Panel (Sits below fixed navbar) -->
+    <transition name="slide-down-panel">
+      <div v-if="isSearchOpen" class="search-dropdown-bar">
+        <div class="search-dropdown-container">
+          <!-- Capsule Search Input Box (Centered) -->
+          <div class="search-capsule-wrapper">
+            <div class="search-capsule-input-container">
+              <svg class="search-capsule-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                ref="searchInput" 
+                type="text" 
+                class="search-capsule-input" 
+                :placeholder="t('searchPlaceholder')" 
+                v-model="searchQuery"
+                @keydown.esc="isSearchOpen = false"
+              />
+              <button v-if="searchQuery" class="search-clear-btn" @click="searchQuery = ''" aria-label="Clear search">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="clear-icon">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Search Results -->
+          <div class="search-dropdown-results">
+            <div v-if="searchQuery.trim().length > 0" class="search-dropdown-grid">
+              
+              <!-- Events Results -->
+              <div v-if="filteredSearchEvents.length > 0" class="search-dropdown-section">
+                <h4 class="results-section-title">{{ currentLang === 'id' ? 'EVENT MUSIK' : 'MUSIC EVENTS' }}</h4>
+                <div class="results-list-cards">
+                  <a 
+                    v-for="event in filteredSearchEvents" 
+                    :key="event.id" 
+                    :href="'#event-detail-' + event.id"
+                    class="search-result-card"
+                    @click="isSearchOpen = false"
+                  >
+                    <div class="result-card-img" :style="{ backgroundImage: `url(${event.image})` }"></div>
+                    <div class="result-card-info">
+                      <span class="result-card-tag">{{ event.category }}</span>
+                      <h5 class="result-card-name">{{ event.title }}</h5>
+                      <span class="result-card-meta">{{ event.venue }}</span>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Products Results -->
+              <div v-if="filteredSearchProducts.length > 0" class="search-dropdown-section">
+                <h4 class="results-section-title">MERCHANDISE</h4>
+                <div class="results-list-cards">
+                  <a 
+                    v-for="product in filteredSearchProducts" 
+                    :key="product.id" 
+                    href="#merch-page"
+                    class="search-result-card"
+                    @click="isSearchOpen = false"
+                  >
+                    <img :src="product.image" :alt="product.name" class="result-card-img-tag" />
+                    <div class="result-card-info">
+                      <span class="result-card-tag">{{ product.category }}</span>
+                      <h5 class="result-card-name">{{ product.name }}</h5>
+                      <span class="result-card-meta">{{ product.price }}</span>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+              <!-- No Results State -->
+              <div v-if="filteredSearchEvents.length === 0 && filteredSearchProducts.length === 0" class="search-no-results">
+                <p>{{ currentLang === 'id' ? 'Tidak ada hasil yang cocok.' : 'No matches found.' }}</p>
+              </div>
+
+            </div>
+            
+            <!-- Default Popular Suggestions when query is empty -->
+            <div v-else class="search-dropdown-suggestions">
+              <h4 class="suggestions-title">{{ currentLang === 'id' ? 'PENCARIAN POPULER' : 'POPULAR SEARCHES' }}</h4>
+              <div class="suggestions-tags">
+                <button class="suggestion-tag-btn" @click="searchQuery = 'Tee'">Tee</button>
+                <button class="suggestion-tag-btn" @click="searchQuery = 'Hoodie'">Hoodie</button>
+                <button class="suggestion-tag-btn" @click="searchQuery = 'Noise'">Noise Parade</button>
+                <button class="suggestion-tag-btn" @click="searchQuery = 'Festival'">Festival</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Search Backdrop under the dropdown panel -->
+    <transition name="fade">
+      <div v-if="isSearchOpen" class="search-dropdown-backdrop" @click="isSearchOpen = false"></div>
     </transition>
   </nav>
 </template>
@@ -680,7 +960,7 @@ onMounted(() => {
   align-items: center;
   border: 1px solid var(--border-color);
   background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .qty-adjust-btn {
@@ -829,5 +1109,528 @@ onMounted(() => {
 
 .mobile-nav-item.active-link {
   color: var(--text-primary) !important;
+}
+
+/* ========================================== */
+/* NEW LANGUAGE SELECTOR (DESKTOP)            */
+/* ========================================== */
+.lang-selector-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.lang-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  transition: var(--transition-smooth);
+}
+
+.lang-btn:hover {
+  border-color: var(--border-color-hover);
+  background-color: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.lang-dropdown-card {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  background: rgba(18, 18, 18, 0.96);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 175px;
+  z-index: 101;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.lang-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.lang-option.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* ========================================== */
+/* NEW SEARCH BUTTON (DESKTOP)                */
+/* ========================================== */
+.search-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.search-btn:hover {
+  border-color: var(--border-color-hover);
+  background-color: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.search-icon-svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+/* ========================================== */
+/* NEW LANGUAGE SELECTOR (MOBILE ACCORDION)  */
+/* ========================================== */
+.mobile-lang-accordion-wrapper {
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-lang-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #FFFFFF;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.trigger-label {
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.active-flag-badge {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  margin-left: auto;
+  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.chevron-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.mobile-lang-options-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mobile-lang-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.mobile-lang-option.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+
+/* ========================================== */
+/* NEW DROPDOWN SEARCH PANEL (BELOW NAVBAR)  */
+/* ========================================== */
+.search-dropdown-bar {
+  position: fixed;
+  top: 90px; /* Right under desktop navbar */
+  left: 0;
+  width: 100%;
+  max-height: calc(100vh - 90px);
+  background-color: rgba(12, 12, 12, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 99; /* Below navbar (100) but above backdrop (98) */
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+  overflow-y: auto;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 992px) {
+  .search-dropdown-bar {
+    top: 65px;
+    max-height: calc(100vh - 65px - 75px); /* Leave room for mobile bottom nav (75px) */
+  }
+}
+
+.search-dropdown-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Capsule Search Input Style (Design from the image) */
+.search-capsule-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.search-capsule-input-container {
+  position: relative;
+  width: 100%;
+  max-width: 550px;
+}
+
+.search-capsule-input {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--border-color);
+  border-radius: 9999px; /* Pill/Capsule shape */
+  padding: 0.85rem 1.5rem 0.85rem 3rem;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  outline: none;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.search-capsule-input:focus {
+  border-color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.search-capsule-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+
+.search-capsule-input:focus ~ .search-capsule-icon {
+  color: #ffffff;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-clear-btn:hover {
+  color: #ffffff;
+}
+
+.clear-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Dropdown Results and Grid */
+.search-dropdown-results {
+  width: 100%;
+}
+
+.search-dropdown-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.search-dropdown-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.search-dropdown-suggestions {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Backdrop */
+.search-dropdown-backdrop {
+  position: fixed;
+  top: 90px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 90px);
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 98;
+}
+
+@media (max-width: 992px) {
+  .search-dropdown-backdrop {
+    top: 65px;
+    height: calc(100vh - 65px);
+  }
+}
+
+/* Transitions */
+.slide-down-panel-enter-active,
+.slide-down-panel-leave-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.slide-down-panel-enter-from,
+.slide-down-panel-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+.results-section-title {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+}
+
+.results-list-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.search-result-card {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  text-decoration: none;
+  align-items: center;
+  transition: all 0.25s ease;
+}
+
+.search-result-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.result-card-img {
+  width: 65px;
+  height: 65px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  filter: brightness(0.9);
+}
+
+.result-card-img-tag {
+  width: 65px;
+  height: 65px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #111;
+  filter: brightness(0.9);
+}
+
+.result-card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  overflow: hidden;
+}
+
+.result-card-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.result-card-name {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.result-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.search-no-results {
+  padding: 4rem 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.suggestions-title {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  margin-bottom: 1.25rem;
+  text-transform: uppercase;
+}
+
+.suggestions-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.suggestion-tag-btn {
+  padding: 0.55rem 1.35rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: #ffffff;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-tag-btn:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+/* ========================================== */
+/* RESPONSIVE LAYOUT UPDATES                  */
+/* ========================================== */
+.desktop-only {
+  display: block;
+}
+
+@media (max-width: 992px) {
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-bottom-nav {
+    display: block;
+  }
+  
+  /* Prevent content overlap with fixed bottom tab bar */
+  body {
+    padding-bottom: 75px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .results-list-cards {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

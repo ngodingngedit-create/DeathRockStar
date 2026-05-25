@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
+import { t, currentLang } from '../store/lang.js'
 
 // Import local image assets
 import teeImg from '../assets/images/merch_tee.png'
@@ -20,8 +21,12 @@ const products = ref([
     price: 'Rp 149.000',
     image: teeImg,
     category: 'T-Shirt',
-    description: 'Kaos resmi Deathrockstar dengan desain logo Track & Bark. Terbuat dari bahan cotton combed 30s yang nyaman dipakai sehari-hari. Cocok untuk kamu yang hidup di dalam dan untuk scene.',
+    description: {
+      id: 'Kaos resmi Deathrockstar dengan desain logo Track & Bark. Terbuat dari bahan cotton combed 30s yang nyaman dipakai sehari-hari. Cocok untuk kamu yang hidup di dalam dan untuk scene.',
+      en: 'Official Deathrockstar t-shirt featuring the Track & Bark logo design. Crafted from cotton combed 30s fabric for daily comfort. Perfect for those who live in and for the scene.'
+    },
     stock: 23,
+    label: 'BEST SELLER',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -41,8 +46,12 @@ const products = ref([
     price: 'Rp 299.000',
     image: hoodieImg,
     category: 'Hoodie',
-    description: 'Hoodie pullover Deathrockstar premium dengan cetakan grafis bertekstur di bagian depan dan belakang. Dilengkapi kantong kanguru dan tali serut yang tebal. Melindungimu dari dinginnya malam di gig outdoor.',
+    description: {
+      id: 'Hoodie pullover Deathrockstar premium dengan cetakan grafis bertekstur di bagian depan and belakang. Dilengkapi kantong kanguru dan tali serut yang tebal. Melindungimu dari dinginnya malam di gig outdoor.',
+      en: 'Premium Deathrockstar pullover hoodie with textured graphic print on the front and back. Equipped with a kangaroo pocket and thick drawstrings. Protects you from the cold night of outdoor gigs.'
+    },
     stock: 15,
+    label: 'PRE-ORDER',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -61,8 +70,12 @@ const products = ref([
     price: 'Rp 129.000',
     image: capImg,
     category: 'Accessories',
-    description: 'Topi baseball Deathrockstar dengan strap besi yang bisa disesuaikan di bagian belakang. Menampilkan bordir logo depan bergaya brutalist yang tegas.',
-    stock: 8,
+    description: {
+      id: 'Topi baseball Deathrockstar dengan strap besi yang bisa disesuaikan di bagian belakang. Menampilkan bordir logo depan bergaya brutalist yang tegas.',
+      en: 'Deathrockstar baseball cap with adjustable metal strap in the back. Features a bold front embroidered logo in brutalist style.'
+    },
+    stock: 0,
+    label: 'SOLD OUT',
     sizes: ['One Size'],
     colors: [
       { name: 'Pure Black', hex: '#000000' }
@@ -80,8 +93,12 @@ const products = ref([
     price: 'Rp 99.000',
     image: bagImg,
     category: 'Accessories',
-    description: 'Tote bag kanvas tebal tahan lama dengan desain grafis ikonik. Sangat luas untuk membawa piringan hitam, zine, merch, atau perlengkapan harianmu.',
+    description: {
+      id: 'Tote bag kanvas tebal tahan lama dengan desain grafis ikonik. Sangat luas untuk membawa piringan hitam, zine, merch, atau perlengkapan harianmu.',
+      en: 'Durable thick canvas tote bag with iconic graphic design. Spacious enough to carry vinyl records, zines, merch, or your daily gear.'
+    },
     stock: 12,
+    label: 'LIMITED',
     sizes: ['One Size'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -95,6 +112,19 @@ const products = ref([
     ]
   }
 ])
+
+const translateLabel = (label) => {
+  if (!label) return ''
+  const key = label.toLowerCase().replace(' ', '').replace('-', '')
+  const mapping = {
+    bestseller: 'bestSeller',
+    preorder: 'preOrder',
+    soldout: 'soldOut',
+    limited: 'limited'
+  }
+  const storeKey = mapping[key] || key
+  return t(storeKey)
+}
 
 // Modal State
 const selectedProduct = ref(null)
@@ -167,11 +197,15 @@ const handleAddToCart = () => {
 }
 
 const handleChat = () => {
-  alert(`Connecting to store manager about ${selectedProduct.value.name}...`)
+  alert(currentLang.value === 'id' 
+    ? `Menghubungi manajer toko mengenai ${selectedProduct.value.name}...` 
+    : `Connecting to store manager about ${selectedProduct.value.name}...`)
 }
 
 const openSizeGuide = () => {
-  alert(`Size Guide:\nS: 47 x 67 cm\nM: 50 x 70 cm\nL: 53 x 73 cm\nXL: 56 x 75 cm\nXXL: 59 x 77 cm`)
+  alert(currentLang.value === 'id' 
+    ? `Panduan Ukuran:\nS: 47 x 67 cm\nM: 50 x 70 cm\nL: 53 x 73 cm\nXL: 56 x 75 cm\nXXL: 59 x 77 cm` 
+    : `Size Guide:\nS: 47 x 67 cm\nM: 50 x 70 cm\nL: 53 x 73 cm\nXL: 56 x 75 cm\nXXL: 59 x 77 cm`)
 }
 </script>
 
@@ -181,11 +215,11 @@ const openSizeGuide = () => {
       <!-- Section Header -->
       <div class="section-header">
         <div class="header-left">
-          <span class="section-tag">MERCH</span>
-          <h2 class="section-title">MADE FOR THE SCENE.</h2>
+          <span class="section-tag">{{ t('merch') }}</span>
+          <h2 class="section-title">{{ t('merchTitle') }}</h2>
         </div>
         <a href="#merch-page" class="view-all-link hover-underline">
-          VIEW ALL MERCH 
+          {{ t('viewAllMerch') }} 
           <svg class="link-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
@@ -197,11 +231,24 @@ const openSizeGuide = () => {
         <div v-for="product in products" :key="product.id" class="product-card" @click="openQuickView(product)">
           <!-- Image Container -->
           <div class="product-image-wrapper">
+            <!-- Label Badge -->
+            <span 
+              v-if="product.label" 
+              class="product-badge-label" 
+              :class="product.label.toLowerCase().replace(' ', '-')"
+            >
+              {{ translateLabel(product.label) }}
+            </span>
             <img :src="product.image" :alt="product.name" class="product-image" />
             <div class="product-overlay">
-              <button class="quick-add-btn" @click.stop="addItem(product)">
-                <span>QUICK ADD</span>
-                <svg class="plus-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button 
+                class="quick-add-btn" 
+                :class="{ 'disabled-btn': product.stock <= 0 }"
+                :disabled="product.stock <= 0"
+                @click.stop="addItem(product)"
+              >
+                <span>{{ product.stock > 0 ? t('quickAdd') : t('soldOut') }}</span>
+                <svg v-if="product.stock > 0" class="plus-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
               </button>
@@ -234,6 +281,7 @@ const openSizeGuide = () => {
                 <button 
                   class="qty-btn plus" 
                   @click="addItem(product)"
+                  :disabled="product.stock <= 0 || getItemQuantity(product.id) >= product.stock"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
@@ -250,7 +298,7 @@ const openSizeGuide = () => {
               <div class="partner-store">
                 <img src="/logo_mocca.png" alt="Mocca Logo" class="partner-logo" />
                 <div class="partner-info">
-                  <span class="partner-label">Partner Store</span>
+                  <span class="partner-label">{{ t('partnerStore') }}</span>
                   <span class="partner-name">mocca</span>
                 </div>
               </div>
@@ -325,14 +373,14 @@ const openSizeGuide = () => {
                   <div class="qv-stars">
                     <span v-for="star in 5" :key="star" class="qv-star">★</span>
                   </div>
-                  <span class="qv-reviews">(12 Reviews)</span>
+                  <span class="qv-reviews">(12 {{ currentLang === 'id' ? 'Ulasan' : 'Reviews' }})</span>
                 </div>
 
                 <!-- Price -->
                 <p class="qv-price">{{ selectedProduct.price }}</p>
 
                 <!-- Description -->
-                <p class="qv-body-text qv-header-desc">{{ selectedProduct.description }}</p>
+                <p class="qv-body-text qv-header-desc">{{ selectedProduct.description[currentLang] || selectedProduct.description }}</p>
               </div>
 
               <!-- Variants Selectors -->
@@ -340,7 +388,7 @@ const openSizeGuide = () => {
                 <!-- Size Selector -->
                 <div class="qv-variant-group">
                   <div class="qv-variant-header">
-                    <h4 class="qv-section-title">SIZE</h4>
+                    <h4 class="qv-section-title">{{ t('size') }}</h4>
                     <button class="qv-size-guide-btn" @click.stop="openSizeGuide">
                       <svg class="ruler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 21H3V3l18 18Z"/>
@@ -348,7 +396,7 @@ const openSizeGuide = () => {
                         <path d="M12 21v-3"/>
                         <path d="M16 21v-3"/>
                       </svg>
-                      <span>Size Guide</span>
+                      <span>{{ t('sizeGuide') }}</span>
                     </button>
                   </div>
                   <div class="qv-size-chips">
@@ -366,7 +414,7 @@ const openSizeGuide = () => {
 
                 <!-- Color Selector -->
                 <div class="qv-variant-group">
-                  <h4 class="qv-section-title">COLOR</h4>
+                  <h4 class="qv-section-title">{{ t('color') }}</h4>
                   <div class="qv-color-swatches">
                     <button 
                       v-for="color in selectedProduct.colors" 
@@ -384,7 +432,7 @@ const openSizeGuide = () => {
 
                 <!-- Quantity Selector -->
                 <div class="qv-variant-group">
-                  <h4 class="qv-section-title">QUANTITY</h4>
+                  <h4 class="qv-section-title">{{ t('quantity') }}</h4>
                   <div class="qv-quantity-stock-row">
                     <div class="qv-qty-stepper">
                       <button class="qv-qty-btn" @click.stop="decrementQty" :disabled="selectedQuantity <= 0">-</button>
@@ -396,7 +444,7 @@ const openSizeGuide = () => {
                     <div class="qv-stock-badge-pill" :class="{ 'sold-out': selectedProduct.stock <= 0 }">
                       <span class="stock-dot"></span>
                       <span class="stock-text">
-                        {{ selectedProduct.stock > 0 ? `Stok tersedia (${selectedProduct.stock})` : 'Stok habis' }}
+                        {{ selectedProduct.stock > 0 ? `${t('availableStock')} (${selectedProduct.stock})` : t('outOfStock') }}
                       </span>
                     </div>
                   </div>
@@ -417,13 +465,13 @@ const openSizeGuide = () => {
                   <svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
-                  <span>{{ selectedProduct.stock > 0 ? 'TAMBAH KE KERANJANG' : 'SOLD OUT' }}</span>
+                  <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
                 </button>
                 <button class="qv-btn-secondary" @click.stop="handleChat">
                   <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  <span>CHAT</span>
+                  <span>{{ t('chat') }}</span>
                 </button>
               </div>
 
@@ -444,13 +492,13 @@ const openSizeGuide = () => {
               <svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
-              <span>{{ selectedProduct.stock > 0 ? 'TAMBAH KE KERANJANG' : 'SOLD OUT' }}</span>
+              <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
             </button>
             <button class="qv-btn-secondary" @click.stop="handleChat">
               <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>CHAT</span>
+              <span>{{ t('chat') }}</span>
             </button>
           </div>
 
@@ -463,7 +511,7 @@ const openSizeGuide = () => {
 <style scoped>
 .merch-section {
   background-color: var(--bg-primary);
-  padding: 8rem 0 4rem 0;
+  padding: 4rem 0 4rem 0;
   border-top: 1px solid var(--border-color);
 }
 
@@ -534,6 +582,8 @@ const openSizeGuide = () => {
   border: 1px solid var(--border-color);
   transition: var(--transition-smooth);
   cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .product-card:hover {
@@ -553,6 +603,40 @@ const openSizeGuide = () => {
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid var(--border-color);
+}
+
+.product-badge-label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 5;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.product-badge-label.sold-out {
+  background-color: #ff3b30;
+  color: #ffffff;
+}
+
+.product-badge-label.pre-order {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.product-badge-label.limited {
+  background-color: #f59e0b;
+  color: #000000;
+}
+
+.product-badge-label.best-seller {
+  background-color: #10b981;
+  color: #ffffff;
 }
 
 .product-image {
@@ -609,6 +693,16 @@ const openSizeGuide = () => {
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
+.quick-add-btn:disabled,
+.quick-add-btn.disabled-btn {
+  background-color: #333333 !important;
+  color: #888888 !important;
+  cursor: not-allowed !important;
+  border-color: #444444 !important;
+  box-shadow: none !important;
+  transform: translateY(0) !important;
+}
+
 .plus-icon {
   width: 14px;
   height: 14px;
@@ -658,7 +752,7 @@ const openSizeGuide = () => {
   align-items: center;
   border: 1px solid var(--border-color);
   background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -777,7 +871,7 @@ const openSizeGuide = () => {
   max-height: 90vh;
   background-color: #121212;
   border: 1px solid #2C2C2C;
-  border-radius: 0px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   color: #ffffff;
@@ -1377,7 +1471,7 @@ const openSizeGuide = () => {
 
 @media (max-width: 768px) {
   .merch-section {
-    padding: 5rem 0;
+    padding: 3rem 0;
   }
   
   .section-header {

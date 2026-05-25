@@ -84,6 +84,7 @@ button,
   border: none;
   background: none;
   transition: var(--transition-smooth);
+  border-radius: 8px;
 }
 
 /* Common Layout Utilities */

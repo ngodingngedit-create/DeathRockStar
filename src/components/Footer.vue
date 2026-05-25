@@ -1,3 +1,7 @@
+<script setup>
+import { t } from '../store/lang.js'
+</script>
+
 <template>
   <footer class="footer">
     <div class="container footer-grid">
@@ -8,8 +12,7 @@
           <span class="brand-name">DEATH ROCK STAR</span>
         </div>
         <p class="brand-description">
-          A creative collective blending music, merchandise, and live experiences. 
-          Built for the scene, inspired by the people.
+          {{ t('footerDesc') }}
         </p>
         <div class="social-links">
           <!-- Instagram -->
@@ -50,11 +53,11 @@
       <div class="footer-links-col">
         <h4 class="col-title">MENU</h4>
         <ul class="footer-links">
-          <li><a href="#home" class="hover-underline">Home</a></li>
-          <li><a href="#merch-page" class="hover-underline">Merch</a></li>
-          <li><a href="#events-page" class="hover-underline">Events</a></li>
-          <li><a href="#about" class="hover-underline">About</a></li>
-          <li><a href="#contact" class="hover-underline">Contact</a></li>
+          <li><a href="#home" class="hover-underline">{{ t('home') }}</a></li>
+          <li><a href="#merch-page" class="hover-underline">{{ t('merch') }}</a></li>
+          <li><a href="#events-page" class="hover-underline">{{ t('events') }}</a></li>
+          <li><a href="#about" class="hover-underline">{{ t('menuAbout') }}</a></li>
+          <li><a href="#contact" class="hover-underline">{{ t('menuContact') }}</a></li>
         </ul>
       </div>
 
@@ -62,11 +65,11 @@
       <div class="footer-links-col">
         <h4 class="col-title">SHOP</h4>
         <ul class="footer-links">
-          <li><a href="#merch-page" class="hover-underline">All Merch</a></li>
-          <li><a href="#merch-page" class="hover-underline">T-Shirt</a></li>
-          <li><a href="#merch-page" class="hover-underline">Hoodie</a></li>
-          <li><a href="#merch-page" class="hover-underline">Accessories</a></li>
-          <li><a href="#merch-page" class="hover-underline">Sale</a></li>
+          <li><a href="#merch-page" class="hover-underline">{{ t('viewAllMerch') }}</a></li>
+          <li><a href="#merch-page" class="hover-underline">{{ t('shopTshirt') }}</a></li>
+          <li><a href="#merch-page" class="hover-underline">{{ t('shopHoodie') }}</a></li>
+          <li><a href="#merch-page" class="hover-underline">{{ t('accessories') }}</a></li>
+          <li><a href="#merch-page" class="hover-underline">{{ t('shopSale') }}</a></li>
         </ul>
       </div>
 
@@ -74,11 +77,11 @@
       <div class="footer-links-col">
         <h4 class="col-title">INFO</h4>
         <ul class="footer-links">
-          <li><a href="#" class="hover-underline">FAQ</a></li>
-          <li><a href="#" class="hover-underline">Shipping</a></li>
-          <li><a href="#" class="hover-underline">Returns</a></li>
-          <li><a href="#" class="hover-underline">Terms & Conditions</a></li>
-          <li><a href="#" class="hover-underline">Privacy Policy</a></li>
+          <li><a href="#" class="hover-underline">{{ t('infoFAQ') }}</a></li>
+          <li><a href="#" class="hover-underline">{{ t('infoShipping') }}</a></li>
+          <li><a href="#" class="hover-underline">{{ t('infoReturns') }}</a></li>
+          <li><a href="#" class="hover-underline">{{ t('infoTerms') }}</a></li>
+          <li><a href="#" class="hover-underline">{{ t('infoPrivacy') }}</a></li>
         </ul>
       </div>
     </div>
@@ -86,8 +89,8 @@
     <!-- Bottom copyrights area -->
     <div class="footer-bottom">
       <div class="container footer-bottom-container">
-        <p class="copyright">© 2024 Death Rock Star. All rights reserved.</p>
-        <p class="tagline">Built for the scene.</p>
+        <p class="copyright">© 2024 Death Rock Star. {{ t('allRightsReserved') }}</p>
+        <p class="tagline">{{ t('footerBuiltFor') }}</p>
       </div>
     </div>
   </footer>

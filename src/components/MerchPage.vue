@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { t, currentLang } from '../store/lang.js'
 import { addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
 
 // Import local image assets
@@ -13,9 +14,9 @@ import teeLogoDetail from '../assets/images/tee_detail_logo.png'
 import teeLabelDetail from '../assets/images/tee_detail_label.png'
 import teeFabricDetail from '../assets/images/tee_detail_fabric.png'
 
-const activeCategory = ref('Semua')
+const activeCategory = ref('all')
 
-const categories = ['Semua', 'Pakaian', 'Aksesoris', 'Kebutuhan Harian', 'Bundling']
+const categories = ['all', 'clothing', 'accessories', 'dailyNeeds', 'bundling']
 
 // Expanded catalog products
 const products = ref([
@@ -25,8 +26,12 @@ const products = ref([
     price: 'Rp 149.000',
     image: teeImg,
     category: 'Pakaian',
-    description: 'Kaos resmi Deathrockstar dengan desain logo Track & Bark. Terbuat dari bahan cotton combed 30s yang nyaman dipakai sehari-hari.',
+    description: {
+      id: 'Kaos resmi Deathrockstar dengan desain logo Track & Bark. Terbuat dari bahan cotton combed 30s yang nyaman dipakai sehari-hari.',
+      en: 'Official Deathrockstar t-shirt with Track & Bark logo design. Made from cotton combed 30s fabric for daily comfort.'
+    },
     stock: 23,
+    label: 'BEST SELLER',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -41,8 +46,12 @@ const products = ref([
     price: 'Rp 299.000',
     image: hoodieImg,
     category: 'Pakaian',
-    description: 'Hoodie pullover Deathrockstar premium dengan cetakan grafis bertekstur di bagian depan dan belakang. Melindungimu dari dinginnya malam.',
+    description: {
+      id: 'Hoodie pullover Deathrockstar premium dengan cetakan grafis bertekstur di bagian depan dan belakang. Melindungimu dari dinginnya malam.',
+      en: 'Premium Deathrockstar pullover hoodie with textured graphic print on the front and back. Keeps you warm during cold nights.'
+    },
     stock: 15,
+    label: 'PRE-ORDER',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -56,8 +65,12 @@ const products = ref([
     price: 'Rp 129.000',
     image: capImg,
     category: 'Aksesoris',
-    description: 'Topi baseball Deathrockstar dengan strap besi yang bisa disesuaikan di bagian belakang. Bordir logo depan bergaya brutalist.',
-    stock: 8,
+    description: {
+      id: 'Topi baseball Deathrockstar dengan strap besi yang bisa disesuaikan di bagian belakang. Bordir logo depan bergaya brutalist.',
+      en: 'Deathrockstar baseball cap with adjustable metal strap on the back. Features brutalist-style embroidered front logo.'
+    },
+    stock: 0,
+    label: 'SOLD OUT',
     sizes: ['One Size'],
     colors: [{ name: 'Pure Black', hex: '#000000' }],
     images: [capImg, capImg, capImg, capImg]
@@ -68,8 +81,12 @@ const products = ref([
     price: 'Rp 99.000',
     image: bagImg,
     category: 'Aksesoris',
-    description: 'Tote bag kanvas tebal dengan desain grafis ikonik. Sangat luas untuk membawa piringan hitam, zine, merch, atau perlengkapan harianmu.',
+    description: {
+      id: 'Tote bag kanvas tebal dengan desain grafis ikonik. Sangat luas untuk membawa piringan hitam, zine, merch, atau perlengkapan harianmu.',
+      en: 'Thick canvas tote bag with iconic graphic design. Very spacious for carrying vinyls, zines, merch, or daily gear.'
+    },
     stock: 12,
+    label: 'LIMITED',
     sizes: ['One Size'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -83,8 +100,12 @@ const products = ref([
     price: 'Rp 349.000',
     image: hoodieImg,
     category: 'Pakaian',
-    description: 'Zip-up hoodie premium dengan zipper besi YKK kokoh. Menampilkan print grafis minimalis di bagian dada kiri dan logo besar di punggung.',
+    description: {
+      id: 'Zip-up hoodie premium dengan zipper besi YKK kokoh. Menampilkan print grafis minimalis di bagian dada kiri dan logo besar di punggung.',
+      en: 'Premium zip-up hoodie with sturdy YKK metal zipper. Features a minimalist graphic print on the left chest and large back logo.'
+    },
     stock: 18,
+    label: 'PRE-ORDER',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: [{ name: 'Pure Black', hex: '#000000' }],
     images: [hoodieImg, hoodieImg]
@@ -95,8 +116,12 @@ const products = ref([
     price: 'Rp 119.000',
     image: capImg,
     category: 'Aksesoris',
-    description: 'Beanie rajut hangat untuk melengkapi gaya grunge scene kamu. Bahan elastis lembut dan tidak gatal.',
+    description: {
+      id: 'Beanie rajut hangat untuk melengkapi gaya grunge scene kamu. Bahan elastis lembut dan tidak gatal.',
+      en: 'Warm knit beanie to complete your grunge scene style. Soft elastic material that does not scratch.'
+    },
     stock: 20,
+    label: 'BEST SELLER',
     sizes: ['One Size'],
     colors: [
       { name: 'Pure Black', hex: '#000000' },
@@ -110,9 +135,12 @@ const products = ref([
     price: 'Rp 149.000',
     image: teeImg,
     category: 'Pakaian',
-    description: 'Edisi kaos grafis anjing DRS ikonik. Cetak sablon discharge berkualitas tinggi di atas kain katun combed 30s premium.',
-    stock: 14,
-    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    description: {
+      id: 'Edisi kaos grafis anjing DRS ikonik. Cetak sablon discharge berkualitas tinggi di atas kain katun combed 30s premium.',
+      en: 'Iconic DRS dog graphic tee edition. High-quality discharge screen print on premium cotton combed 30s fabric.'
+    },
+    stock: 0,
+    label: 'SOLD OUT',
     colors: [{ name: 'Pure Black', hex: '#000000' }],
     images: [teeImg, teeLogoDetail]
   },
@@ -122,8 +150,12 @@ const products = ref([
     price: 'Rp 79.000',
     image: bagImg,
     category: 'Kebutuhan Harian',
-    description: 'Mug keramik hitam matte tebal dengan sablon logo Deathrockstar. Cocok untuk kopi pagi sebelum mendengarkan piringan hitam favorit.',
+    description: {
+      id: 'Mug keramik hitam matte tebal dengan sablon logo Deathrockstar. Cocok untuk kopi pagi sebelum mendengarkan piringan hitam favorit.',
+      en: 'Thick matte black ceramic mug with Deathrockstar logo screen print. Perfect for morning coffee before vinyl sessions.'
+    },
     stock: 30,
+    label: 'LIMITED',
     sizes: ['One Size'],
     colors: [{ name: 'Matte Black', hex: '#1C1C1C' }],
     images: [bagImg]
@@ -134,8 +166,12 @@ const products = ref([
     price: 'Rp 29.000',
     image: capImg,
     category: 'Aksesoris',
-    description: 'Satu pak berisi 8 stiker vinyl tahan air dengan berbagai macam logo dan artwork Deathrockstar. Tempel di laptop, gitar, atau helm.',
+    description: {
+      id: 'Satu pak berisi 8 stiker vinyl tahan air dengan berbagai macam logo dan artwork Deathrockstar. Tempel di laptop, gitar, atau helm.',
+      en: 'A pack containing 8 waterproof vinyl stickers with various Deathrockstar logos and artworks. Paste on laptops, guitars, or helmets.'
+    },
     stock: 50,
+    label: 'BEST SELLER',
     sizes: ['One Size'],
     colors: [{ name: 'Multi-Color', hex: '#ffffff' }],
     images: [capImg]
@@ -146,8 +182,12 @@ const products = ref([
     price: 'Rp 49.000',
     image: bagImg,
     category: 'Aksesoris',
-    description: 'Kaos kaki rajut sporty katun tebal dengan rajutan logo DRS di sisi kanan dan kiri. Nyaman untuk dipakai moshpit.',
+    description: {
+      id: 'Kaos kaki rajut sporty katun tebal dengan rajutan logo DRS di sisi kanan dan kiri. Nyaman untuk dipakai moshpit.',
+      en: 'Sporty knit thick cotton socks with DRS logo knitted on both sides. Comfortable for moshpits.'
+    },
     stock: 40,
+    label: 'LIMITED',
     sizes: ['One Size'],
     colors: [
       { name: 'Pure White', hex: '#ffffff' },
@@ -161,8 +201,12 @@ const products = ref([
     price: 'Rp 199.000',
     image: bagImg,
     category: 'Bundling',
-    description: 'Paket hemat starter pack berisi 1 DRS Tote Bag + 1 DRS Coffee Mug + 1 DRS Sticker Pack. Pilihan tepat untuk merchandise kolektif.',
+    description: {
+      id: 'Paket hemat starter pack berisi 1 DRS Tote Bag + 1 DRS Coffee Mug + 1 DRS Sticker Pack. Pilihan tepat untuk merchandise kolektif.',
+      en: 'Value starter pack containing 1 DRS Tote Bag + 1 DRS Coffee Mug + 1 DRS Sticker Pack. Great choice for collective merch.'
+    },
     stock: 10,
+    label: 'LIMITED',
     sizes: ['One Size'],
     colors: [{ name: 'Pure Black', hex: '#000000' }],
     images: [bagImg]
@@ -173,8 +217,12 @@ const products = ref([
     price: 'Rp 499.000',
     image: hoodieImg,
     category: 'Bundling',
-    description: 'Bundling lengkap paling dicari: 1 DRS Logo Tee + 1 DRS Hoodie + 1 DRS Cap + 1 DRS Tote Bag. Paket lengkap scene rockstar sejati.',
+    description: {
+      id: 'Bundling lengkap paling dicari: 1 DRS Logo Tee + 1 DRS Hoodie + 1 DRS Cap + 1 DRS Tote Bag. Paket lengkap scene rockstar sejati.',
+      en: 'The most sought-after bundle: 1 DRS Logo Tee + 1 DRS Hoodie + 1 DRS Cap + 1 DRS Tote Bag. Complete package for a true scene rockstar.'
+    },
     stock: 5,
+    label: 'PRE-ORDER',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     colors: [{ name: 'Pure Black', hex: '#000000' }],
     images: [hoodieImg, teeImg, capImg, bagImg]
@@ -183,11 +231,31 @@ const products = ref([
 
 // Filtered products list
 const filteredProducts = computed(() => {
-  if (activeCategory.value === 'Semua') {
+  if (activeCategory.value === 'all') {
     return products.value
   }
-  return products.value.filter(p => p.category === activeCategory.value)
+  const categoryMapping = {
+    clothing: 'Pakaian',
+    accessories: 'Aksesoris',
+    dailyNeeds: 'Kebutuhan Harian',
+    bundling: 'Bundling'
+  }
+  const targetCat = categoryMapping[activeCategory.value]
+  return products.value.filter(p => p.category === targetCat)
 })
+
+const translateLabel = (label) => {
+  if (!label) return ''
+  const key = label.toLowerCase().replace(' ', '').replace('-', '')
+  const mapping = {
+    bestseller: 'bestSeller',
+    preorder: 'preOrder',
+    soldout: 'soldOut',
+    limited: 'limited'
+  }
+  const storeKey = mapping[key] || key
+  return t(storeKey)
+}
 
 // Modal State
 const selectedProduct = ref(null)
@@ -260,11 +328,15 @@ const handleAddToCart = () => {
 }
 
 const handleChat = () => {
-  alert(`Connecting to store manager about ${selectedProduct.value.name}...`)
+  alert(currentLang.value === 'id' 
+    ? `Menghubungi manajer toko mengenai ${selectedProduct.value.name}...` 
+    : `Connecting to store manager about ${selectedProduct.value.name}...`)
 }
 
 const openSizeGuide = () => {
-  alert(`Size Guide:\nS: 47 x 67 cm\nM: 50 x 70 cm\nL: 53 x 73 cm\nXL: 56 x 75 cm\nXXL: 59 x 77 cm`)
+  alert(currentLang.value === 'id' 
+    ? `Panduan Ukuran:\nS: 47 x 67 cm\nM: 50 x 70 cm\nL: 53 x 73 cm\nXL: 56 x 75 cm\nXXL: 59 x 77 cm` 
+    : `Size Guide:\nS: 47 x 67 cm\nM: 50 x 70 cm\nL: 53 x 73 cm\nXL: 56 x 75 cm\nXXL: 59 x 77 cm`)
 }
 </script>
 
@@ -273,9 +345,9 @@ const openSizeGuide = () => {
     <div class="container">
       <!-- Section Header -->
       <div class="page-header">
-        <span class="page-tag">STORE</span>
-        <h1 class="page-title">DRS MERCHANDISE CATALOG</h1>
-        <p class="page-subtitle">Kaos resmi, aksesoris, dan paket bundling eksklusif Deathrockstar.</p>
+        <span class="page-tag">{{ t('merch') }}</span>
+        <h1 class="page-title">{{ t('merchCatalogTitle') }}</h1>
+        <p class="page-subtitle">{{ t('merchCatalogSubtitle') }}</p>
       </div>
 
       <!-- Category Filter Buttons -->
@@ -288,7 +360,7 @@ const openSizeGuide = () => {
             :class="{ 'active': activeCategory === cat }"
             @click="activeCategory = cat"
           >
-            {{ cat }}
+            {{ t(cat) }}
           </button>
         </div>
       </div>
@@ -298,11 +370,24 @@ const openSizeGuide = () => {
         <div v-for="product in filteredProducts" :key="product.id" class="product-card" @click="openQuickView(product)">
           <!-- Image Container -->
           <div class="product-image-wrapper">
+            <!-- Label Badge -->
+            <span 
+              v-if="product.label" 
+              class="product-badge-label" 
+              :class="product.label.toLowerCase().replace(' ', '-')"
+            >
+              {{ translateLabel(product.label) }}
+            </span>
             <img :src="product.image" :alt="product.name" class="product-image" />
             <div class="product-overlay">
-              <button class="quick-add-btn" @click.stop="addItem(product)">
-                <span>QUICK ADD</span>
-                <svg class="plus-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button 
+                class="quick-add-btn" 
+                :class="{ 'disabled-btn': product.stock <= 0 }"
+                :disabled="product.stock <= 0"
+                @click.stop="addItem(product)"
+              >
+                <span>{{ product.stock > 0 ? t('quickAdd') : t('soldOut') }}</span>
+                <svg v-if="product.stock > 0" class="plus-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
               </button>
@@ -333,6 +418,7 @@ const openSizeGuide = () => {
                 <button 
                   class="qty-btn plus" 
                   @click="addItem(product)"
+                  :disabled="product.stock <= 0 || getItemQuantity(product.id) >= product.stock"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
@@ -349,7 +435,7 @@ const openSizeGuide = () => {
               <div class="partner-store">
                 <img src="/logo_mocca.png" alt="Mocca Logo" class="partner-logo" />
                 <div class="partner-info">
-                  <span class="partner-label">Partner Store</span>
+                  <span class="partner-label">{{ t('partnerStore') }}</span>
                   <span class="partner-name">mocca</span>
                 </div>
               </div>
@@ -360,7 +446,7 @@ const openSizeGuide = () => {
 
       <!-- No Products Found State -->
       <div v-if="filteredProducts.length === 0" class="no-products">
-        <p>Produk tidak ditemukan di kategori ini.</p>
+        <p>{{ t('noProducts') }}</p>
       </div>
     </div>
 
@@ -421,19 +507,19 @@ const openSizeGuide = () => {
                   <div class="qv-stars">
                     <span v-for="star in 5" :key="star" class="qv-star">★</span>
                   </div>
-                  <span class="qv-reviews">(12 Reviews)</span>
+                  <span class="qv-reviews">(12 {{ currentLang === 'id' ? 'Ulasan' : 'Reviews' }})</span>
                 </div>
                 <p class="qv-price">{{ selectedProduct.price }}</p>
 
                 <!-- Description -->
-                <p class="qv-body-text qv-header-desc">{{ selectedProduct.description }}</p>
+                <p class="qv-body-text qv-header-desc">{{ selectedProduct.description[currentLang] || selectedProduct.description }}</p>
               </div>
 
               <div class="qv-variants">
                 <!-- Size Selector -->
                 <div v-if="selectedProduct.sizes && selectedProduct.sizes.length > 0 && selectedProduct.sizes[0] !== 'One Size'" class="qv-variant-group">
                   <div class="qv-variant-header">
-                    <h4 class="qv-section-title">SIZE</h4>
+                    <h4 class="qv-section-title">{{ t('size') }}</h4>
                     <button class="qv-size-guide-btn" @click.stop="openSizeGuide">
                       <svg class="ruler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 21H3V3l18 18Z"/>
@@ -441,7 +527,7 @@ const openSizeGuide = () => {
                         <path d="M12 21v-3"/>
                         <path d="M16 21v-3"/>
                       </svg>
-                      <span>Size Guide</span>
+                      <span>{{ t('sizeGuide') }}</span>
                     </button>
                   </div>
                   <div class="qv-size-chips">
@@ -459,7 +545,7 @@ const openSizeGuide = () => {
 
                 <!-- Color Selector -->
                 <div v-if="selectedProduct.colors && selectedProduct.colors.length > 0" class="qv-variant-group">
-                  <h4 class="qv-section-title">COLOR</h4>
+                  <h4 class="qv-section-title">{{ t('color') }}</h4>
                   <div class="qv-color-swatches">
                     <button 
                       v-for="color in selectedProduct.colors" 
@@ -477,7 +563,7 @@ const openSizeGuide = () => {
 
                 <!-- Quantity Selector -->
                 <div class="qv-variant-group">
-                  <h4 class="qv-section-title">QUANTITY</h4>
+                  <h4 class="qv-section-title">{{ t('quantity') }}</h4>
                   <div class="qv-quantity-stock-row">
                     <div class="qv-qty-stepper">
                       <button class="qv-qty-btn" @click.stop="decrementQty" :disabled="selectedQuantity <= 0">-</button>
@@ -489,7 +575,7 @@ const openSizeGuide = () => {
                     <div class="qv-stock-badge-pill" :class="{ 'sold-out': selectedProduct.stock <= 0 }">
                       <span class="stock-dot"></span>
                       <span class="stock-text">
-                        {{ selectedProduct.stock > 0 ? `Stok tersedia (${selectedProduct.stock})` : 'Stok habis' }}
+                        {{ selectedProduct.stock > 0 ? `${t('availableStock')} (${selectedProduct.stock})` : t('outOfStock') }}
                       </span>
                     </div>
                   </div>
@@ -509,13 +595,13 @@ const openSizeGuide = () => {
                   <svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
-                  <span>{{ selectedProduct.stock > 0 ? 'TAMBAH KE KERANJANG' : 'SOLD OUT' }}</span>
+                  <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
                 </button>
                 <button class="qv-btn-secondary" @click.stop="handleChat">
                   <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  <span>CHAT</span>
+                  <span>{{ t('chat') }}</span>
                 </button>
               </div>
             </div>
@@ -535,13 +621,13 @@ const openSizeGuide = () => {
               <svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
-              <span>{{ selectedProduct.stock > 0 ? 'TAMBAH KE KERANJANG' : 'SOLD OUT' }}</span>
+              <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
             </button>
             <button class="qv-btn-secondary" @click.stop="handleChat">
               <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>CHAT</span>
+              <span>{{ t('chat') }}</span>
             </button>
           </div>
         </div>
@@ -641,6 +727,8 @@ const openSizeGuide = () => {
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .product-card:hover {
@@ -660,6 +748,40 @@ const openSizeGuide = () => {
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.product-badge-label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 5;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.product-badge-label.sold-out {
+  background-color: #ff3b30;
+  color: #ffffff;
+}
+
+.product-badge-label.pre-order {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.product-badge-label.limited {
+  background-color: #f59e0b;
+  color: #000000;
+}
+
+.product-badge-label.best-seller {
+  background-color: #10b981;
+  color: #ffffff;
 }
 
 .product-image {
@@ -716,6 +838,16 @@ const openSizeGuide = () => {
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
+.quick-add-btn:disabled,
+.quick-add-btn.disabled-btn {
+  background-color: #333333 !important;
+  color: #888888 !important;
+  cursor: not-allowed !important;
+  border-color: #444444 !important;
+  box-shadow: none !important;
+  transform: translateY(0) !important;
+}
+
 .plus-icon {
   width: 14px;
   height: 14px;
@@ -765,7 +897,7 @@ const openSizeGuide = () => {
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background-color: #151515;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -826,8 +958,8 @@ const openSizeGuide = () => {
 }
 
 .partner-logo {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -850,8 +982,8 @@ const openSizeGuide = () => {
 
 .partner-name {
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 740;
   color: #FFFFFF;
   line-height: 1.2;
   text-transform: lowercase;
@@ -888,6 +1020,7 @@ const openSizeGuide = () => {
   max-height: 90vh;
   background-color: #121212;
   border: 1px solid #2C2C2C;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   color: #ffffff;

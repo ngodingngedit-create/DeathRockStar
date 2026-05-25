@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { t, currentLang } from '../store/lang.js'
 
 // Import local image assets for fallback and display
 import noiseImg from '../assets/images/event_noise_parade.png'
@@ -368,6 +369,114 @@ const getOrganizerLetter = computed(() => {
   return eventOrganizer.value.charAt(0)
 })
 
+const getEventDesc = (id) => {
+  const descriptions = {
+    1: {
+      id: 'Noise Parade 2026 hadir kembali dengan energi lebih besar! Malam penuh dentuman musik, aksi panggung, dan euforia tanpa henti. Bersiaplah untuk merasakan pengalaman live yang tak terlupakan bersama lineup terbaik pilihan Death Rock Star. Jangan sampai ketinggalan!',
+      en: 'Noise Parade 2026 is back with even greater energy! A night of heavy beats, energetic stage acts, and non-stop euphoria. Get ready to experience an unforgettable live show with the best lineup curated by Death Rock Star. Don\'t miss out!'
+    },
+    2: {
+      id: 'South Side Fest membawa parade musik alternatif terbesar tahun ini ke Jakarta. Menampilkan panggung outdoor megah dengan pertunjukan audio visual kelas dunia, area kuliner kreatif, dan merchandise eksklusif hanya untuk Anda!',
+      en: 'South Side Fest brings the biggest alternative music parade of the year to Jakarta. Featuring a majestic outdoor stage with world-class audiovisual performances, creative culinary areas, and exclusive merchandise just for you!'
+    },
+    3: {
+      id: 'Sebuah malam gigs intim yang berisik di jantung kota Bandung. Temui komunitas underground, rasakan getaran musik distorsi mentah, dan rayakan semangat independen bersama empat band andalan lokal.',
+      en: 'An intimate and loud night of gigs in the heart of Bandung. Meet the underground community, feel the vibration of raw distorted music, and celebrate the independent spirit with four local favorite bands.'
+    },
+    4: {
+      id: 'Gelombang distorsi metalcore termegah siap menghantam ibu kota. Aksi panggung penuh headbang, moshing pit aman, dan suara gahar menggelegar dari band-band cadas papan atas tanah air.',
+      en: 'The grandest wave of metalcore distortion is ready to hit the capital. Stage action full of headbanging, safe mosh pits, and powerful roaring sounds from top national metalcore bands.'
+    },
+    5: {
+      id: 'Gigs indie pop berbalut melodi manis, lirik reflektif, dan suasana hangat yang akrab. Cocok untuk bersantai dan bernyanyi bersama teman-teman terdekat menikmati malam syahdu.',
+      en: 'An indie pop gig wrapped in sweet melodies, reflective lyrics, and a warm, intimate atmosphere. Perfect for relaxing and singing along with your closest friends to enjoy a beautiful night.'
+    }
+  }
+  return descriptions[id] ? descriptions[id][currentLang.value] : ''
+}
+
+const translateVenue = (v) => {
+  if (!v) return ''
+  if (currentLang.value === 'en') {
+    return v
+      .replace('Live House, Jakarta', 'Live House, Jakarta')
+      .replace('Parkir Timur Senayan, Jakarta', 'Senayan East Parking, Jakarta')
+      .replace('Ruang Bawah Tanah, Bandung', 'Underground Room, Bandung')
+      .replace('Tennis Indoor Senayan, Jakarta', 'Tennis Indoor Senayan, Jakarta')
+      .replace('Rossi Musik, Jakarta', 'Rossi Music, Jakarta')
+  }
+  return v
+}
+
+const translateAddress = (addr) => {
+  if (!addr) return ''
+  if (currentLang.value === 'en') {
+    return addr
+      .replace('Jl. Kemang Raya No. 16, Jakarta Selatan', 'Kemang Raya St. No. 16, South Jakarta')
+      .replace('Gelora Bung Karno, Jl. Pintu Satu Senayan, Jakarta Pusat', 'Gelora Bung Karno, Pintu Satu Senayan St., Central Jakarta')
+      .replace('Jl. Braga No. 109, Sumur Bandung, Bandung', 'Braga St. No. 109, Sumur Bandung, Bandung')
+      .replace('Jl. Pintu Satu Senayan, Kompleks Gelora Bung Karno, Jakarta Pusat', 'Pintu Satu Senayan St., Gelora Bung Karno Complex, Central Jakarta')
+      .replace('Jl. Fatmawati No. 30, Jakarta Selatan', 'Fatmawati St. No. 30, South Jakarta')
+  }
+  return addr
+}
+
+const translateLocation = (loc) => {
+  if (!loc) return ''
+  const mapping = {
+    'Jakarta Pusat': { id: 'Jakarta Pusat', en: 'Central Jakarta' },
+    'Jakarta Selatan': { id: 'Jakarta Selatan', en: 'South Jakarta' },
+    'Jakarta Barat': { id: 'Jakarta Barat', en: 'West Jakarta' },
+    'Jakarta Utara': { id: 'Jakarta Utara', en: 'North Jakarta' },
+  }
+  return mapping[loc] ? mapping[loc][currentLang.value] : loc
+}
+
+const translateTime = (timeStr) => {
+  if (!timeStr) return ''
+  if (currentLang.value === 'id') {
+    return timeStr.replace('Doors open', 'Pintu dibuka')
+  }
+  return timeStr
+}
+
+const translateMonth = (m) => {
+  const mapping = {
+    'MEI': { id: 'MEI', en: 'MAY' },
+    'AGU': { id: 'AGU', en: 'AUG' },
+    'PEB': { id: 'PEB', en: 'FEB' }
+  }
+  return mapping[m] ? mapping[m][currentLang.value] : m
+}
+
+const translateActivity = (act) => {
+  if (!act) return ''
+  if (currentLang.value === 'id') {
+    return act
+      .replace('Doors Open', 'Pintu Dibuka')
+      .replace('Event End', 'Event Selesai')
+  }
+  return act
+}
+
+const getTierName = (id) => {
+  const names = {
+    normal: { id: 'GELOMBANG AWAL OTW NORMAL', en: 'EARLY BIRD TICKET' },
+    ramean: { id: 'GELOMBANG RAMEAN (BUNDLING 4 ORANG)', en: 'GROUP BUNDLING (4 PEOPLE)' },
+    vip: { id: 'VIP ACCESS EXPERIENCE', en: 'VIP ACCESS EXPERIENCE' }
+  }
+  return names[id] ? names[id][currentLang.value] : ''
+}
+
+const getTicketDesc = (eventTitle, tierId) => {
+  const tierName = getTierName(tierId)
+  if (currentLang.value === 'id') {
+    return `Tiket reguler untuk akses ${eventTitle} kategori ${tierName}. Nikmati pertunjukan audio-visual spektakuler dan dukung pergerakan musik independen lokal!`
+  } else {
+    return `Regular ticket for access to ${eventTitle} under the ${tierName} category. Enjoy a spectacular audio-visual performance and support the local independent music scene!`
+  }
+}
+
 onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval)
 })
@@ -503,10 +612,14 @@ const toggleSave = () => {
 // Action button triggers
 const handleOrderNow = () => {
   if (totalQty.value === 0) {
-    alert('Silakan pilih minimal 1 tiket terlebih dahulu!')
+    alert(currentLang.value === 'id' 
+      ? 'Silakan pilih minimal 1 tiket terlebih dahulu!' 
+      : 'Please select at least 1 ticket first!')
     return
   }
-  alert(`Checkout Simulasi Berhasil!\nTotal Pembelian: ${totalQty.value} Tiket\nTotal Harga: Rp ${formatPrice(totalPrice.value)}\n\nTerima kasih telah mendukung pergerakan musik! 🤘`)
+  alert(currentLang.value === 'id'
+    ? `Checkout Simulasi Berhasil!\nTotal Pembelian: ${totalQty.value} Tiket\nTotal Harga: Rp ${formatPrice(totalPrice.value)}\n\nTerima kasih telah mendukung pergerakan musik! 🤘`
+    : `Checkout Simulation Successful!\nTotal Purchase: ${totalQty.value} Tickets\nTotal Price: Rp ${formatPrice(totalPrice.value)}\n\nThank you for supporting the music movement! 🤘`)
   // Reset counters after order
   initializeTickets()
   isBottomSheetOpen.value = false
@@ -514,7 +627,9 @@ const handleOrderNow = () => {
 
 const copyLink = () => {
   navigator.clipboard.writeText(window.location.href)
-  alert('Link detail event berhasil disalin ke clipboard!')
+  alert(currentLang.value === 'id' 
+    ? 'Link detail event berhasil disalin ke clipboard!' 
+    : 'Event details link copied to clipboard successfully!')
 }
 
 // Active tab state: 'deskripsi', 'tiket', or 'syarat'
@@ -538,13 +653,24 @@ const scrollToTickets = () => {
 
 // Chat simulator handler
 const handleChatPenyelenggara = () => {
-  alert(`Membuka Chat dengan Penyelenggara: ${eventOrganizer.value}\n\nFitur ini adalah simulasi chat untuk bertanya seputar event. 💬`)
+  alert(currentLang.value === 'id' 
+    ? `Membuka Chat dengan Penyelenggara: ${eventOrganizer.value}\n\nFitur ini adalah simulasi chat untuk bertanya seputar event. 💬` 
+    : `Opening Chat with Organizer: ${eventOrganizer.value}\n\nThis feature is a simulated chat to ask about the event. 💬`)
 }
 
 // Sidebar accordion expansion states
 const isSidebarInfoExpanded = ref(true)
 const isSidebarVenueExpanded = ref(true)
 const isSidebarShareExpanded = ref(true)
+
+// Order summary edit mode
+const isEditMode = ref(false)
+const resetQty = (tier) => {
+  tier.qty = 0
+  if (totalQty.value === 0) {
+    isEditMode.value = false
+  }
+}
 
 // Ticket card accordion expansion states
 const expandedTicketTiers = ref({
@@ -584,87 +710,55 @@ const toggleTicketTier = (tier) => {
             
             <!-- Countdown Timer -->
             <div class="countdown-widget">
-              <span class="countdown-title">EVENT DIMULAI DALAM</span>
+              <span class="countdown-title">
+                {{ currentLang === 'id' ? 'EVENT DIMULAI DALAM' : 'EVENT STARTS IN' }}
+              </span>
               <div class="countdown-timer">
                 <div class="time-block">
                   <div class="time-number">{{ countdown.days }}</div>
-                  <span class="time-label">HARI</span>
+                  <span class="time-label">{{ currentLang === 'id' ? 'HARI' : 'DAYS' }}</span>
                 </div>
-                <span class="time-colon">:</span>
+                <div class="time-colon">:</div>
                 <div class="time-block">
                   <div class="time-number">{{ countdown.hours }}</div>
-                  <span class="time-label">JAM</span>
+                  <span class="time-label">{{ currentLang === 'id' ? 'JAM' : 'HOURS' }}</span>
                 </div>
-                <span class="time-colon">:</span>
+                <div class="time-colon">:</div>
                 <div class="time-block">
                   <div class="time-number">{{ countdown.minutes }}</div>
-                  <span class="time-label">MENIT</span>
+                  <span class="time-label">{{ currentLang === 'id' ? 'MENIT' : 'MINS' }}</span>
                 </div>
-                <span class="time-colon">:</span>
+                <div class="time-colon">:</div>
                 <div class="time-block">
                   <div class="time-number">{{ countdown.seconds }}</div>
-                  <span class="time-label">DETIK</span>
+                  <span class="time-label">{{ currentLang === 'id' ? 'DETIK' : 'SECS' }}</span>
                 </div>
               </div>
             </div>
           </div>
           
-          <!-- Content Split Layout -->
-          <div class="hero-main-split">
-            <!-- Left Side: Poster Image -->
-            <div class="hero-poster-col">
-              <div class="hero-poster-wrapper">
-                <img :src="currentEvent.image" :alt="currentEvent.title" class="hero-poster-img" />
-              </div>
+          <!-- Bottom Row: Event Metadata Summary -->
+          <div class="hero-meta-summary">
+            <div class="meta-item">
+              <span class="meta-lbl">{{ currentLang === 'id' ? 'TANGGAL' : 'DATE' }}</span>
+              <span class="meta-val">{{ currentEvent.day }} {{ translateMonth(currentEvent.month) }} {{ currentEvent.year }}</span>
             </div>
             
-            <!-- Right Side: Info -->
-            <div class="hero-info-col">
-              <!-- Metadata List -->
-              <div class="hero-meta-list">
-                <!-- Date -->
-                <div class="meta-item">
-                  <svg class="meta-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <div class="meta-content-block">
-                    <span class="meta-title-bold">{{ formatEventDayAndDate(currentEvent.date) }}</span>
-                    <span class="meta-subtitle-grey">{{ cleanTimeRange }}</span>
-                  </div>
-                </div>
+            <div class="meta-item">
+              <span class="meta-lbl">{{ currentLang === 'id' ? 'WAKTU' : 'TIME' }}</span>
+              <span class="meta-val">{{ translateTime(currentEvent.time) }}</span>
+            </div>
 
-                <!-- Venue Location -->
-                <div class="meta-item">
-                  <svg class="meta-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <div class="meta-content-block">
-                    <span class="meta-title-bold">{{ currentEvent.venue }}</span>
-                    <span class="meta-subtitle-grey">{{ currentEvent.address }}</span>
-                  </div>
-                </div>
+            <div class="meta-item">
+              <span class="meta-lbl">{{ currentLang === 'id' ? 'LOKASI' : 'LOCATION' }}</span>
+              <span class="meta-val">{{ translateLocation(currentEvent.location) }}</span>
+            </div>
 
-                <!-- Tags / Genre -->
-                <div class="meta-item">
-                  <svg class="meta-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.969 0 1.371 1.24.588 1.81l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.175 0l-3.97 2.883c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.97-2.883c-.783-.57-.38-1.81.588-1.81h4.906a1 1 0 00.951-.69l1.519-4.674z" />
-                  </svg>
-                  <div class="meta-content-block">
-                    <span class="meta-title-bold">{{ currentEvent.category }} • Musik</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Organizer Profile Block -->
-              <div class="organizer-profile-block">
-                <div class="organizer-avatar-circle">
-                  <span class="organizer-letter">{{ getOrganizerLetter }}</span>
-                </div>
-                <div class="organizer-text-info">
-                  <span class="organizer-label">PENYELENGGARA</span>
-                  <span class="organizer-name">{{ eventOrganizer }}</span>
-                </div>
+            <div class="meta-item">
+              <span class="meta-lbl">{{ currentLang === 'id' ? 'PENYELENGGARA' : 'ORGANIZER' }}</span>
+              <div class="organizer-badge-stack">
+                <span class="organizer-badge-avatar">{{ getOrganizerLetter }}</span>
+                <span class="organizer-name">{{ eventOrganizer }}</span>
               </div>
             </div>
           </div>
@@ -678,22 +772,22 @@ const toggleTicketTier = (tier) => {
           :class="{ active: activeTab === 'deskripsi' }" 
           @click="activeTab = 'deskripsi'"
         >
-          DESKRIPSI
+          {{ t('detailDesk') }}
         </button>
         <button 
           class="tab-nav-btn" 
           :class="{ active: activeTab === 'tiket' }" 
           @click="activeTab = 'tiket'"
         >
-          TIKET
+          {{ t('detailTiket') }}
         </button>
         <button 
           class="tab-nav-btn" 
           :class="{ active: activeTab === 'syarat' }" 
           @click="activeTab = 'syarat'"
         >
-          <span class="desktop-tab-label">SYARAT & KETENTUAN</span>
-          <span class="mobile-tab-label">S&K</span>
+          <span class="desktop-tab-label">{{ t('detailSyarat') }}</span>
+          <span class="mobile-tab-label">{{ currentLang === 'id' ? 'S&K' : 'T&C' }}</span>
         </button>
       </div>
 
@@ -707,8 +801,8 @@ const toggleTicketTier = (tier) => {
           <div v-if="activeTab === 'deskripsi'" class="tab-content-pane">
             <!-- Tentang Event Section -->
             <section class="content-section">
-              <h2 class="section-heading">TENTANG EVENT</h2>
-              <p class="event-description-text">{{ currentEvent.desc }}</p>
+              <h2 class="section-heading">{{ currentLang === 'id' ? 'TENTANG EVENT' : 'ABOUT THE EVENT' }}</h2>
+              <p class="event-description-text">{{ getEventDesc(currentEvent.id) || currentEvent.desc }}</p>
             </section>
 
             <!-- Lineup Carousel Section -->
@@ -734,7 +828,7 @@ const toggleTicketTier = (tier) => {
 
             <!-- Jadwal Event (Rundown) Section -->
             <section class="content-section">
-              <h2 class="section-heading">JADWAL EVENT</h2>
+              <h2 class="section-heading">{{ currentLang === 'id' ? 'JADWAL EVENT' : 'EVENT SCHEDULE' }}</h2>
               
               <div class="rundown-timeline">
                 <div v-for="(item, idx) in rundown" :key="idx" class="timeline-node">
@@ -746,7 +840,7 @@ const toggleTicketTier = (tier) => {
                   
                   <div class="node-content">
                     <span class="node-time">{{ item.time }}</span>
-                    <span class="node-activity">{{ item.activity }}</span>
+                    <span class="node-activity">{{ translateActivity(item.activity) }}</span>
                   </div>
                 </div>
               </div>
@@ -756,7 +850,7 @@ const toggleTicketTier = (tier) => {
           <!-- Tab Content: Tiket -->
           <div v-else-if="activeTab === 'tiket'" class="tab-content-pane">
             <section class="content-section main-ticket-selector">
-              <h2 class="section-heading">PILIH TIKET</h2>
+              <h2 class="section-heading">{{ t('pilihTiket') }}</h2>
               
               <div class="ticket-list-stub-wrapper">
                 <div 
@@ -776,9 +870,9 @@ const toggleTicketTier = (tier) => {
                     @click="toggleTicketTier(tier)"
                   >
                     <div class="header-left-col">
-                      <h3 class="tier-title-mockup">{{ tier.name }}</h3>
+                      <h3 class="tier-title-mockup">{{ getTierName(tier.id) }}</h3>
                       <span class="tier-status-badge" :class="{ 'sold-out': tier.status === 'habis' || isPastEvent }">
-                        {{ (tier.status === 'habis' || isPastEvent) ? '• TIKET HABIS' : '• PENJUALAN BERLANGSUNG' }}
+                        {{ (tier.status === 'habis' || isPastEvent) ? `• ${currentLang === 'id' ? 'TIKET HABIS' : 'SOLD OUT'}` : `• ${currentLang === 'id' ? 'PENJUALAN BERLANGSUNG' : 'SALES ACTIVE'}` }}
                       </span>
                     </div>
                     
@@ -786,7 +880,7 @@ const toggleTicketTier = (tier) => {
                     
                     <div class="header-right-col">
                       <div class="header-price-info">
-                        <span class="price-lbl">Harga</span>
+                        <span class="price-lbl">{{ currentLang === 'id' ? 'Harga' : 'Price' }}</span>
                         <div class="price-details-stack">
                           <div v-if="tier.originalPrice" class="discount-meta-row">
                             <span class="original-price">Rp {{ formatPrice(tier.originalPrice) }}</span>
@@ -806,77 +900,77 @@ const toggleTicketTier = (tier) => {
                     <div v-show="expandedTicketTiers[tier.id]" class="ticket-card-body">
                       <!-- TANGGAL EVENT -->
                       <div class="body-info-section">
-                        <span class="info-section-title">TANGGAL EVENT</span>
+                        <span class="info-section-title">{{ currentLang === 'id' ? 'TANGGAL EVENT' : 'EVENT DATE' }}</span>
                         <div class="info-date-row">
                           <!-- Calendar Icon -->
                           <div class="calendar-icon-block">
-                            <span class="cal-month">{{ currentEvent.month }}</span>
+                            <span class="cal-month">{{ translateMonth(currentEvent.month) }}</span>
                             <span class="cal-day">{{ currentEvent.day }}</span>
                           </div>
-                          <span class="cal-desc-text">Masa berlaku: {{ formatShortDate(currentEvent.date) }}</span>
+                          <span class="cal-desc-text">{{ currentLang === 'id' ? 'Masa berlaku' : 'Validity' }}: {{ formatShortDate(currentEvent.date) }}</span>
                         </div>
                       </div>
 
                       <!-- INFORMASI TIKET -->
                       <div class="body-info-section">
-                        <span class="info-section-title">INFORMASI TIKET</span>
+                        <span class="info-section-title">{{ currentLang === 'id' ? 'INFORMASI TIKET' : 'TICKET INFORMATION' }}</span>
                         <div class="info-bullets-row">
                           <div class="bullet-item">
                             <svg class="bullet-icon cross" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                             </svg>
-                            <span>Tidak Bisa Refund</span>
+                            <span>{{ currentLang === 'id' ? 'Tidak Bisa Refund' : 'Non-Refundable' }}</span>
                           </div>
                           <div class="bullet-item">
                             <svg class="bullet-icon check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>Konfirmasi Instan</span>
+                            <span>{{ currentLang === 'id' ? 'Konfirmasi Instan' : 'Instant Confirmation' }}</span>
                           </div>
                           <div class="bullet-item">
                             <svg class="bullet-icon tax" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span>Termasuk Pajak 10%</span>
+                            <span>{{ currentLang === 'id' ? 'Termasuk Pajak 10%' : '10% Tax Included' }}</span>
                           </div>
                         </div>
                       </div>
 
                       <!-- DESKRIPSI TIKET -->
                       <div class="body-info-section">
-                        <span class="info-section-title">DESKRIPSI TIKET</span>
+                        <span class="info-section-title">{{ currentLang === 'id' ? 'DESKRIPSI TIKET' : 'TICKET DESCRIPTION' }}</span>
                         <p class="ticket-description-para">
-                          Tiket reguler untuk akses {{ currentEvent.title }} kategori {{ tier.name }}. Nikmati pertunjukan audio-visual spektakuler dan dukung pergerakan musik independen lokal!
+                          {{ getTicketDesc(currentEvent.title, tier.id) }}
                         </p>
                       </div>
 
                       <!-- BENEFIT -->
                       <div class="body-info-section">
-                        <span class="info-section-title">BENEFIT</span>
+                        <span class="info-section-title">{{ currentLang === 'id' ? 'BENEFIT' : 'BENEFITS' }}</span>
                         <div class="benefits-list">
                           <div class="benefit-bullet">
                             <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>Akses masuk konser</span>
+                            <span>{{ currentLang === 'id' ? 'Akses masuk konser' : 'Concert entry access' }}</span>
                           </div>
                           <div class="benefit-bullet">
                             <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>Area festival (standing)</span>
+                            <span>{{ currentLang === 'id' ? 'Area festival (standing)' : 'Festival area (standing)' }}</span>
                           </div>
                           <div class="benefit-bullet">
                             <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>Akses ke booth merchandise resmi</span>
+                            <span>{{ currentLang === 'id' ? 'Akses ke booth merchandise resmi' : 'Access to official merchandise booth' }}</span>
                           </div>
                           <div class="benefit-bullet">
                             <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>Tidak termasuk meet & greet artis</span>
+                            <span>{{ currentLang === 'id' ? 'Tidak termasuk meet & greet artis' : 'Excludes artist meet & greet' }}</span>
                           </div>
                         </div>
                       </div>
@@ -887,7 +981,7 @@ const toggleTicketTier = (tier) => {
                   <div class="ticket-card-footer">
                     <!-- Date info (grid-area: date) -->
                     <div class="footer-left-col">
-                      <span class="footer-label">BERAKHIR PADA</span>
+                      <span class="footer-label">{{ currentLang === 'id' ? 'BERAKHIR PADA' : 'ENDS ON' }}</span>
                       <span class="footer-time">{{ formatShortDate(currentEvent.date) }}, 22:00 WIB</span>
                     </div>
                     
@@ -897,14 +991,14 @@ const toggleTicketTier = (tier) => {
                       class="btn-add-ticket"
                       @click="incrementQty(tier)"
                     >
-                      + Tambah
+                      + {{ currentLang === 'id' ? 'Tambah' : 'Add' }}
                     </button>
                     <button 
                       v-else-if="tier.status === 'habis' || isPastEvent"
                       class="btn-sold-out-ticket"
                       disabled
                     >
-                      Habis
+                      {{ t('soldOut') }}
                     </button>
                     <div v-else class="tier-stepper-mockup">
                       <button class="step-btn-mock minus" @click="decrementQty(tier)">-</button>
@@ -927,7 +1021,7 @@ const toggleTicketTier = (tier) => {
           <!-- Tab Content: Syarat & Ketentuan -->
           <div v-else-if="activeTab === 'syarat'" class="tab-content-pane">
             <section class="content-section">
-              <h2 class="section-heading">SYARAT & KETENTUAN</h2>
+              <h2 class="section-heading">{{ t('detailSyarat') }}</h2>
               
               <ul class="event-rules-list">
                 <li v-for="(rule, idx) in rules" :key="idx" class="rule-item">
@@ -957,9 +1051,12 @@ const toggleTicketTier = (tier) => {
           
           <!-- Module Info Harga & Navigasi Tiket Container -->
           <div class="sidebar-block ticket-price-info-module" :class="{ 'hide-on-mobile-tiket': activeTab === 'tiket' }">
-            <h3 class="sidebar-block-title collapsible-header" @click="isSidebarInfoExpanded = !isSidebarInfoExpanded">
-              <span>{{ activeTab === 'tiket' ? 'RINGKASAN PESANAN' : 'INFO EVENT' }}</span>
-              <svg class="chevron-icon" :class="{ rotated: !isSidebarInfoExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <h3 class="sidebar-block-title" :class="{ 'collapsible-header': activeTab !== 'tiket' }" @click="activeTab !== 'tiket' ? isSidebarInfoExpanded = !isSidebarInfoExpanded : null">
+              <span>{{ activeTab === 'tiket' ? t('summary') : (currentLang === 'id' ? 'INFO EVENT' : 'EVENT INFO') }}</span>
+              <button v-if="activeTab === 'tiket'" class="btn-edit-summary" @click.stop="isEditMode = !isEditMode">
+                {{ isEditMode ? (currentLang === 'id' ? 'Selesai' : 'Done') : (currentLang === 'id' ? 'Edit' : 'Edit') }}
+              </button>
+              <svg v-else class="chevron-icon" :class="{ rotated: !isSidebarInfoExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </h3>
@@ -975,15 +1072,20 @@ const toggleTicketTier = (tier) => {
                       <div v-for="tier in ticketTiers" :key="tier.id">
                         <div v-if="tier.qty > 0" class="summary-item-row">
                           <div class="item-name-qty">
-                            <span class="item-name">{{ tier.name }}</span>
+                            <span class="item-name">{{ getTierName(tier.id) }}</span>
                             <span class="item-qty">x{{ tier.qty }}</span>
                           </div>
-                          <span class="item-subtotal">Rp {{ formatPrice(tier.qty * tier.price) }}</span>
+                          <span v-if="!isEditMode" class="item-subtotal">Rp {{ formatPrice(tier.qty * tier.price) }}</span>
+                          <button v-else class="btn-remove-item" @click="resetQty(tier)">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     </template>
                     <div v-else class="summary-empty-state">
-                      Belum ada tiket yang dipilih. Silakan pilih tiket di samping.
+                      {{ t('noTicketsSelected') }}
                     </div>
                   </div>
 
@@ -993,8 +1095,8 @@ const toggleTicketTier = (tier) => {
                   <!-- Total Price -->
                   <div class="summary-total-row">
                     <div class="total-lbl-stack">
-                      <span class="total-main-lbl">TOTAL PEMBAYARAN</span>
-                      <span class="total-sub-lbl">({{ totalQty }} Tiket)</span>
+                      <span class="total-main-lbl">{{ t('totalPayment') }}</span>
+                      <span class="total-sub-lbl">({{ totalQty }} {{ currentLang === 'id' ? 'Tiket' : 'Tickets' }})</span>
                     </div>
                     <span class="total-price-val">Rp {{ formatPrice(totalPrice) }}</span>
                   </div>
@@ -1005,7 +1107,7 @@ const toggleTicketTier = (tier) => {
                 <!-- Condition: DESKRIPSI or SYARAT TAB (Info Event starting price & Lihat Tiket) -->
                 <div v-else class="info-event-original-box">
                   <div class="starting-price-box">
-                    <span class="price-label">HARGA MULAI DARI</span>
+                    <span class="price-label">{{ t('startingFrom') }}</span>
                     <span class="price-amount">Rp {{ formatPrice(startingPrice) }}</span>
                   </div>
 
@@ -1019,7 +1121,7 @@ const toggleTicketTier = (tier) => {
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                         </svg>
-                        <span>LIHAT TIKET</span>
+                        <span>{{ t('lihatTiket') }}</span>
                       </button>
                     </transition>
 
@@ -1028,14 +1130,14 @@ const toggleTicketTier = (tier) => {
                         <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
-                        <span>CHAT</span>
+                        <span>{{ t('chat') }}</span>
                       </button>
                       
                       <button class="btn-secondary-save-half" @click="toggleSave">
                         <svg class="btn-icon" :class="{ 'is-saved': isSaved }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
-                        <span>{{ isSaved ? 'TERSIMPAN' : 'SIMPAN' }}</span>
+                        <span>{{ isSaved ? (currentLang === 'id' ? 'TERSIMPAN' : 'SAVED') : (currentLang === 'id' ? 'SIMPAN' : 'SAVE') }}</span>
                       </button>
                     </div>
                   </div>
@@ -1048,7 +1150,7 @@ const toggleTicketTier = (tier) => {
           <!-- Module Informasi Venue Container -->
           <div class="sidebar-block venue-info-module" v-if="activeTab !== 'tiket'">
             <h3 class="sidebar-block-title collapsible-header" @click="isSidebarVenueExpanded = !isSidebarVenueExpanded">
-              <span>INFORMASI VENUE</span>
+              <span>{{ t('venueInfo') }}</span>
               <svg class="chevron-icon" :class="{ rotated: !isSidebarVenueExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -1063,12 +1165,12 @@ const toggleTicketTier = (tier) => {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <div class="venue-address-block">
-                      <span class="venue-title">{{ currentEvent.venue }}</span>
-                      <p class="venue-description">{{ currentEvent.address }}</p>
+                      <span class="venue-title">{{ translateVenue(currentEvent.venue) }}</span>
+                      <p class="venue-description">{{ translateAddress(currentEvent.address) }}</p>
                     </div>
                   </div>
                   
-                  <a href="https://maps.google.com" target="_blank" class="btn-view-map">LIHAT PETA</a>
+                  <a href="https://maps.google.com" target="_blank" class="btn-view-map">{{ t('viewMap') }}</a>
                 </div>
               </div>
             </transition>
@@ -1077,7 +1179,7 @@ const toggleTicketTier = (tier) => {
           <!-- Module Bagikan Event Container -->
           <div class="sidebar-block share-event-module">
             <h3 class="sidebar-block-title collapsible-header" @click="isSidebarShareExpanded = !isSidebarShareExpanded">
-              <span>BAGIKAN EVENT</span>
+              <span>{{ t('shareEvent') }}</span>
               <svg class="chevron-icon" :class="{ rotated: !isSidebarShareExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -1090,7 +1192,7 @@ const toggleTicketTier = (tier) => {
                   <a href="https://api.whatsapp.com" target="_blank" class="share-circle-btn" aria-label="Share on WhatsApp">
                     <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.963 3.41 1.472 5.358 1.473 5.485.002 9.948-4.468 9.95-9.96.001-2.66-1.037-5.163-2.92-7.05-1.884-1.889-4.387-2.93-7.054-2.932-5.489 0-9.956 4.462-9.959 9.95-.001 1.83.479 3.619 1.39 5.215L2.392 21.66l6.255-1.642zm9.961-6.732c-.324-.162-1.92-.949-2.217-1.058-.297-.108-.513-.162-.73.162-.216.324-.838 1.058-1.027 1.274-.19.216-.378.243-.702.081-.324-.162-1.37-.505-2.61-1.611-.963-.859-1.613-1.921-1.802-2.246-.19-.324-.02-.5-.181-.661-.146-.146-.324-.378-.486-.568-.162-.19-.216-.324-.324-.541-.108-.216-.055-.405-.027-.567.027-.162.216-.513.324-.676.108-.162.162-.27.243-.459.081-.189.041-.351-.014-.513-.054-.162-.513-1.243-.703-1.702-.186-.445-.373-.385-.513-.392-.132-.007-.284-.008-.436-.008-.152 0-.401.057-.611.286-.21.23-.8.784-.8 1.91 0 1.126.82 2.215.933 2.368.113.152 1.612 2.463 3.908 3.45.546.235.973.376 1.306.481.549.174 1.049.15 1.444.09.44-.067 1.92-.784 2.19-1.541.27-.756.27-1.405.189-1.541-.081-.136-.297-.216-.622-.378z"/>
-                  </svg>
+                    </svg>
                   </a>
                   
                   <!-- Twitter -->
@@ -1125,7 +1227,7 @@ const toggleTicketTier = (tier) => {
       <!-- Recommendation section at bottom -->
       <section class="recommended-events-section content-section">
         <div class="section-header-row">
-          <h2 class="section-heading">EVENT LAINNYA</h2>
+          <h2 class="section-heading">{{ t('otherEvents') }}</h2>
           <div class="carousel-nav-arrows">
             <button class="nav-arrow" @click="scrollRecommended('left')">&lt;</button>
             <button class="nav-arrow" @click="scrollRecommended('right')">&gt;</button>
@@ -1142,13 +1244,13 @@ const toggleTicketTier = (tier) => {
             </div>
             
             <div class="rec-card-details">
-              <span class="rec-location">{{ rec.location }}</span>
+              <span class="rec-location">{{ translateLocation(rec.location) }}</span>
               <h4 class="rec-title">{{ rec.title }}</h4>
               <div class="rec-meta">
                 <svg class="rec-meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span>{{ rec.day }} {{ rec.month }} {{ rec.year }}</span>
+                <span>{{ rec.day }} {{ translateMonth(rec.month) }} {{ rec.year }}</span>
               </div>
               <div class="rec-price">Rp {{ formatPrice(rec.price) }}</div>
             </div>
@@ -1160,14 +1262,14 @@ const toggleTicketTier = (tier) => {
 
     <!-- Bottom Sheet Drawer backdrop -->
     <transition name="fade">
-      <div v-if="isBottomSheetOpen" class="bottom-sheet-backdrop" @click="isBottomSheetOpen = false"></div>
+      <div v-if="isBottomSheetOpen" class="bottom-sheet-backdrop bottom-sheet-mobile-only" @click="isBottomSheetOpen = false"></div>
     </transition>
 
     <!-- Bottom Sheet Drawer panel -->
     <transition name="slide-up">
-      <div v-if="isBottomSheetOpen" class="bottom-sheet-drawer">
+      <div v-if="isBottomSheetOpen" class="bottom-sheet-drawer bottom-sheet-mobile-only">
         <div class="drawer-header">
-          <h4 class="drawer-title">RINGKASAN PESANAN</h4>
+          <h4 class="drawer-title">{{ t('summary') }}</h4>
           <button class="drawer-close-btn" @click="isBottomSheetOpen = false">&times;</button>
         </div>
         
@@ -1179,7 +1281,7 @@ const toggleTicketTier = (tier) => {
                 <div v-for="tier in ticketTiers" :key="tier.id">
                   <div v-if="tier.qty > 0" class="summary-item-row">
                     <div class="item-name-qty">
-                      <span class="item-name">{{ tier.name }}</span>
+                      <span class="item-name">{{ getTierName(tier.id) }}</span>
                       <span class="item-qty">x{{ tier.qty }}</span>
                     </div>
                     <span class="item-subtotal">Rp {{ formatPrice(tier.qty * tier.price) }}</span>
@@ -1187,7 +1289,7 @@ const toggleTicketTier = (tier) => {
                 </div>
               </template>
               <div v-else class="summary-empty-state">
-                Belum ada tiket yang dipilih.
+                {{ t('noTicketsSelectedSimple') }}
               </div>
             </div>
           </div>
@@ -1203,7 +1305,7 @@ const toggleTicketTier = (tier) => {
         <div class="bottom-bar-desktop-only">
           <div class="bottom-bar-left">
             <span class="bottom-bar-price-label">
-              {{ activeTab === 'tiket' ? `HARGA (${totalQty}) TIKET` : 'HARGA MULAI DARI' }}
+              {{ activeTab === 'tiket' ? (currentLang === 'id' ? `HARGA (${totalQty}) TIKET` : `TICKET PRICE (${totalQty})`) : t('startingFrom') }}
             </span>
             <span class="bottom-bar-price-amount">
               Rp {{ formatPrice(activeTab === 'tiket' ? totalPrice : startingPrice) }}
@@ -1215,14 +1317,14 @@ const toggleTicketTier = (tier) => {
               class="btn-bottom-action btn-lihat-tiket" 
               @click="scrollToTickets"
             >
-              LIHAT TIKET
+              {{ t('lihatTiket') }}
             </button>
             <button 
               v-else-if="activeTab === 'tiket'"
               class="btn-bottom-action btn-beli-tiket" 
               @click="handleOrderNow"
             >
-              BELI TIKET
+              {{ t('buyTicket') }}
             </button>
           </div>
         </div>
@@ -1232,11 +1334,11 @@ const toggleTicketTier = (tier) => {
           <!-- Simple info bottom bar if not ticket tab -->
           <div v-if="activeTab !== 'tiket'" class="mobile-simple-bar">
             <div class="bottom-bar-left">
-              <span class="bottom-bar-price-label">HARGA MULAI DARI</span>
+              <span class="bottom-bar-price-label">{{ t('startingFrom') }}</span>
               <span class="bottom-bar-price-amount">Rp {{ formatPrice(startingPrice) }}</span>
             </div>
             <button class="btn-bottom-action btn-lihat-tiket" @click="scrollToTickets">
-              LIHAT TIKET
+              {{ t('lihatTiket') }}
             </button>
           </div>
 
@@ -1244,17 +1346,17 @@ const toggleTicketTier = (tier) => {
           <div v-else class="mobile-checkout-bar">
             <div class="checkout-bar-row-top">
               <div class="bar-price-stack">
-                <span class="bar-price-lbl">TOTAL HARGA</span>
+                <span class="bar-price-lbl">{{ t('totalPriceKey') }}</span>
                 <span class="bar-price-val">Rp {{ formatPrice(totalPrice) }}</span>
               </div>
               <button class="btn-detail-toggle" @click="toggleBottomSheet">
-                <span>({{ totalQty }}) Detail</span>
+                <span>({{ totalQty }}) {{ t('detail') }}</span>
                 <span class="caret-icon">{{ isBottomSheetOpen ? '▼' : '▲' }}</span>
               </button>
             </div>
             <div class="checkout-bar-row-bottom">
               <button class="btn-beli-sekarang" @click="handleOrderNow" :disabled="totalQty === 0">
-                Beli Tiket Sekarang
+                {{ t('buyTicketNow') }}
               </button>
               <button class="btn-chat-mobile" @click="handleChatPenyelenggara">
                 <svg class="chat-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1452,7 +1554,7 @@ const toggleTicketTier = (tier) => {
   flex-direction: column;
   align-items: flex-end;
   margin-bottom: 0.2rem;
-  transform: translateY(6px);
+  transform: translateY(22px);
 }
 
 .countdown-title {
@@ -1489,7 +1591,7 @@ const toggleTicketTier = (tier) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .time-colon {
@@ -1689,7 +1791,7 @@ const toggleTicketTier = (tier) => {
   cursor: pointer;
   font-weight: 700;
   transition: all 0.2s ease;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .nav-arrow:hover {
@@ -1895,7 +1997,7 @@ const toggleTicketTier = (tier) => {
 /* ========================================== */
 .sidebar-block {
   background-color: #141414;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.03);
   text-align: left;
@@ -1968,7 +2070,7 @@ const toggleTicketTier = (tier) => {
   display: flex;
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: #0c0c0c;
   overflow: hidden;
 }
@@ -2011,6 +2113,47 @@ const toggleTicketTier = (tier) => {
   flex-direction: column;
   gap: 0.6rem;
   font-size: 0.85rem;
+}
+
+.btn-edit-summary {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  left: 180px;
+}
+
+.btn-edit-summary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-remove-item {
+  color: #ef4444;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.btn-remove-item:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.summary-empty-state {
+  display: flex;
+  justify-content: space-between;
+  color: #999999;
 }
 
 .summary-row {
@@ -2229,7 +2372,7 @@ const toggleTicketTier = (tier) => {
 
 .main-ticket-selector {
   background-color: #141414;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.03);
 }
@@ -2527,6 +2670,17 @@ const toggleTicketTier = (tier) => {
   justify-content: center;
 }
 
+.bottom-bar-desktop-only {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bottom-bar-mobile-only, .bottom-sheet-mobile-only {
+  display: none !important;
+}
+
 .btn-lihat-tiket {
   background-color: transparent;
   color: #FFFFFF;
@@ -2640,7 +2794,7 @@ const toggleTicketTier = (tier) => {
   text-transform: uppercase;
   background-color: #E6F8F5;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 8px;
   display: inline-block;
   margin-top: 0.25rem;
 }
@@ -2765,7 +2919,7 @@ const toggleTicketTier = (tier) => {
   height: 48px;
   background-color: #1E1E1E;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
@@ -2933,9 +3087,9 @@ const toggleTicketTier = (tier) => {
 
 /* TAMBAH Button - matching dark brown accent */
 .btn-add-ticket {
-  background-color: #2E1A16;
-  color: #FFFFFF;
-  border: 1px solid #2E1A16;
+  background-color: #ffffff;
+  color: #0B0B0B;
+  border: 1px solid #ffffff;
   font-size: 0.75rem;
   font-weight: 800;
   padding: 0.6rem 1.75rem;
@@ -3306,6 +3460,7 @@ const toggleTicketTier = (tier) => {
 
   .countdown-widget {
     align-items: flex-start;
+    transform: none;
   }
 
   .hero-fav-btn {
@@ -3400,7 +3555,7 @@ const toggleTicketTier = (tier) => {
     border: 1px solid #FFFFFF !important;
     font-size: 0.75rem !important;
     padding: 0.65rem 1.25rem !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
   }
 
   .mobile-checkout-bar {
@@ -3473,7 +3628,7 @@ const toggleTicketTier = (tier) => {
     font-size: 0.85rem;
     font-weight: 800;
     padding: 0.65rem; /* Compact padding */
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
     text-align: center;
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
@@ -3497,7 +3652,7 @@ const toggleTicketTier = (tier) => {
     background-color: transparent !important;
     color: #FFFFFF !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 12px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3626,7 +3781,7 @@ const toggleTicketTier = (tier) => {
     gap: 1rem;
   }
   .ticket-card-mockup {
-    border-radius: 16px !important;
+    border-radius: 8px !important;
   }
   .ticket-card-header {
     flex-direction: column !important;
@@ -3645,7 +3800,7 @@ const toggleTicketTier = (tier) => {
     font-size: 0.6rem !important;
     padding: 3px 6px !important;
     margin-top: 0.2rem !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
   }
   .header-mid-divider {
     display: block !important;

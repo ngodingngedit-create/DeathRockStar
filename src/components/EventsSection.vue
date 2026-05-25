@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { t, currentLang } from '../store/lang.js'
 
 // Import local image assets
 import noiseImg from '../assets/images/event_noise_parade.png'
@@ -51,6 +52,25 @@ const events = ref([
   }
 ])
 
+const translateLocation = (venue) => {
+  if (!venue) return ''
+  if (currentLang.value === 'en') {
+    return venue
+      .replace('Ruang Bawah Tanah, Bandung', 'Underground Room, Bandung')
+      .replace('Live House, Jakarta', 'Live House, Jakarta')
+      .replace('Parkir Timur Senayan, Jakarta', 'Senayan East Parking, Jakarta')
+  }
+  return venue
+}
+
+const translateTime = (timeStr) => {
+  if (!timeStr) return ''
+  if (currentLang.value === 'id') {
+    return timeStr.replace('Doors open', 'Pintu dibuka')
+  }
+  return timeStr
+}
+
 const toggleFavorite = (event) => {
   event.isFavorite = !event.isFavorite
 }
@@ -70,11 +90,11 @@ const navigateToDetail = (id) => {
       <!-- Section Header -->
       <div class="section-header">
         <div class="header-left">
-          <span class="section-tag">EVENTS</span>
-          <h2 class="section-title">LIVE EXPERIENCES YOU DON'T WANT TO MISS.</h2>
+          <span class="section-tag">{{ t('events') }}</span>
+          <h2 class="section-title">{{ t('eventsTitle') }}</h2>
         </div>
         <a href="#events-page" class="view-all-link hover-underline">
-          VIEW ALL EVENTS 
+          {{ t('viewAllEvents') }} 
           <svg class="link-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
@@ -134,25 +154,25 @@ const navigateToDetail = (id) => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>{{ event.venue }}</span>
+                <span>{{ translateLocation(event.venue) }}</span>
               </div>
               <!-- Time item -->
               <div class="meta-item">
                 <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{{ event.time }}</span>
+                <span>{{ translateTime(event.time) }}</span>
               </div>
             </div>
 
             <!-- Footer: Price & Ticket Button -->
             <div class="event-footer">
               <div class="event-price-box">
-                <span class="price-label">Mulai dari</span>
+                <span class="price-label">{{ t('mulaiDari') }}</span>
                 <span class="price-amount">Rp {{ formatPrice(event.price) }}</span>
               </div>
               <a :href="'#event-detail-' + event.id" class="pilih-tiket-btn" @click.prevent="navigateToDetail(event.id)">
-                <span>PILIH TIKET</span>
+                <span>{{ t('pilihTiket') }}</span>
                 <svg class="btn-arrow-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
                 </svg>
@@ -241,7 +261,7 @@ const navigateToDetail = (id) => {
   grid-template-columns: 480px 1fr;
   align-items: stretch;
   background-color: #1E1E1E;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -287,7 +307,7 @@ const navigateToDetail = (id) => {
   width: 100%;
   height: 100%;
   min-height: 170px;
-  border-radius: 12px 0 0 12px;
+  border-radius: 8px 0 0 8px;
   overflow: hidden;
 }
 
@@ -435,7 +455,7 @@ const navigateToDetail = (id) => {
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: transparent;
   color: #FFFFFF;
   font-size: 0.8rem;
@@ -503,7 +523,7 @@ const navigateToDetail = (id) => {
     width: 100%;
     height: 180px;
     min-height: auto;
-    border-radius: 12px 12px 0 0;
+    border-radius: 8px 8px 0 0;
   }
   
   .event-details-container {

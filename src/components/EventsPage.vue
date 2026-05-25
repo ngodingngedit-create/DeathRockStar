@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { t, currentLang } from '../store/lang.js'
 
 // Import local image assets
 import noiseImg from '../assets/images/event_noise_parade.png'
@@ -291,12 +292,66 @@ const filteredEvents = computed(() => {
   return list
 })
 
+const isExpanded = ref(false)
+
+watch(searchLocationQuery, () => {
+  isExpanded.value = false
+})
+
+const displayedEvents = computed(() => {
+  return isExpanded.value ? filteredEvents.value : filteredEvents.value.slice(0, 3)
+})
+
 const changeTab = (tab) => {
   activeCategoryTab.value = tab
+  isExpanded.value = false
 }
 
 const navigateToDetail = (id) => {
   window.location.hash = `#event-detail-${id}`
+}
+
+const translateLocation = (loc) => {
+  if (!loc) return ''
+  const mapping = {
+    'Jakarta Pusat': { id: 'Jakarta Pusat', en: 'Central Jakarta' },
+    'Jakarta Selatan': { id: 'Jakarta Selatan', en: 'South Jakarta' },
+    'Jakarta Barat': { id: 'Jakarta Barat', en: 'West Jakarta' },
+    'Jakarta Utara': { id: 'Jakarta Utara', en: 'North Jakarta' },
+  }
+  return mapping[loc] ? mapping[loc][currentLang.value] : loc
+}
+
+const translateVenue = (venue) => {
+  if (!venue) return ''
+  if (currentLang.value === 'en') {
+    return venue
+      .replace('Live House, Jakarta', 'Live House, Jakarta')
+      .replace('Parkir Timur Senayan, Jakarta', 'Senayan East Parking, Jakarta')
+      .replace('Ruang Bawah Tanah, Bandung', 'Underground Room, Bandung')
+      .replace('Tennis Indoor Senayan, Jakarta', 'Tennis Indoor Senayan, Jakarta')
+      .replace('Rossi Musik, Jakarta', 'Rossi Music, Jakarta')
+      .replace('Gambir Expo Kemayoran, Jakarta', 'Kemayoran Gambir Expo, Jakarta')
+      .replace('Kebun Raya Bogor, Bogor', 'Bogor Botanical Garden, Bogor')
+      .replace('Indoor Arena, Tangerang', 'Indoor Arena, Tangerang')
+      .replace('Amphitheater, Malang', 'Amphitheater, Malang')
+      .replace('Pantai Indah Kapuk, Jakarta', 'Pantai Indah Kapuk, Jakarta')
+      .replace('Fort Rotterdam, Makassar', 'Fort Rotterdam, Makassar')
+      .replace('Old Town Hall, Semarang', 'Old Town Hall, Semarang')
+      .replace('Lapangan Benteng, Medan', 'Benteng Field, Medan')
+      .replace('Taman Balekambang, Solo', 'Balekambang Park, Solo')
+      .replace('Dago Tea House, Bandung', 'Dago Tea House, Bandung')
+  }
+  return venue
+}
+
+const translateMonth = (m) => {
+  const mapping = {
+    'MEI': { id: 'MEI', en: 'MAY' },
+    'AGU': { id: 'AGU', en: 'AUG' },
+    'PEB': { id: 'PEB', en: 'FEB' }
+  }
+  return mapping[m] ? mapping[m][currentLang.value] : m
 }
 </script>
 
@@ -307,11 +362,17 @@ const navigateToDetail = (id) => {
       <!-- Hero Section -->
       <section class="events-hero">
         <div class="hero-text-col">
-          <span class="hero-tag">ALL EVENTS</span>
-          <h1 class="hero-title">MADE FOR THE SCENE, LIVE IN STAGE.</h1>
-          <p class="hero-subtitle">Jelajahi konser, gig, dan festival terbaik di kota Anda.</p>
+          <span class="hero-tag">{{ t('allEvents') }}</span>
+          <h1 class="hero-title">
+            {{ currentLang === 'id' ? 'DIBUAT UNTUK SCENE, LIVE DI PANGGUNG.' : 'MADE FOR THE SCENE, LIVE ON STAGE.' }}
+          </h1>
+          <h2 class="hero-subtitle">
+            {{ currentLang === 'id' ? 'Jelajahi konser, gig, dan festival terbaik di kota Anda.' : 'Explore the best concerts, gigs, and festivals in your city.' }}
+          </h2>
           <p class="hero-desc">
-            Saksikan band favorit Anda secara langsung. Dapatkan akses ke tiket gigs underground, live house eksklusif, hingga festival musik outdoor berskala nasional dengan sistem pemesanan yang mudah, aman, dan instan.
+            {{ currentLang === 'id' 
+              ? 'Saksikan band favorit Anda secara langsung. Dapatkan akses ke tiket gigs underground, live house eksklusif, hingga festival musik outdoor berskala nasional dengan sistem pemesanan yang mudah, aman, dan instan.' 
+              : 'Watch your favorite bands live. Get access to underground gigs, exclusive live houses, and national-scale outdoor music festivals with an easy, secure, and instant booking system.' }}
           </p>
         </div>
         <div class="hero-image-col">
@@ -331,7 +392,7 @@ const navigateToDetail = (id) => {
             <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
-            <span>ALL EVENTS</span>
+            <span>{{ t('allEvents') }}</span>
           </button>
 
           <button 
@@ -342,7 +403,7 @@ const navigateToDetail = (id) => {
             <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>UPCOMING</span>
+            <span>{{ t('upcoming') }}</span>
           </button>
 
           <button 
@@ -353,7 +414,7 @@ const navigateToDetail = (id) => {
             <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m9-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>PAST EVENTS</span>
+            <span>{{ t('pastEvents') }}</span>
           </button>
         </div>
 
@@ -363,7 +424,7 @@ const navigateToDetail = (id) => {
             <input 
               type="text" 
               class="search-location-input" 
-              placeholder="Cari lokasi (e.g. Jakarta, Bandung...)" 
+              :placeholder="t('searchLocation')" 
               v-model="searchLocationQuery"
             />
             <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -375,27 +436,25 @@ const navigateToDetail = (id) => {
 
       <!-- Events Grid Cards -->
       <div class="events-grid">
-        <div v-for="event in filteredEvents" :key="event.id" class="grid-event-card">
-          
-          <!-- Favorite button on top absolute -->
-          <button class="card-fav-btn" @click.stop="toggleFavorite(event)" :aria-label="event.isFavorite ? 'Unfavorite' : 'Favorite'">
-            <svg 
-              class="heart-icon" 
-              :class="{ 'is-favorite': event.isFavorite }" 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="2" 
-              stroke-linecap="round" 
-              stroke-linejoin="round"
-            >
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-          </button>
-
+        <div v-for="event in displayedEvents" :key="event.id" class="grid-event-card">
           <!-- Poster Image -->
           <div class="card-image-wrapper">
+            <!-- Favorite button on top absolute -->
+            <button class="card-fav-btn" @click.stop="toggleFavorite(event)" :aria-label="event.isFavorite ? 'Unfavorite' : 'Favorite'">
+              <svg 
+                class="heart-icon" 
+                :class="{ 'is-favorite': event.isFavorite }" 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+                stroke-linecap="round" 
+                stroke-linejoin="round"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
             <img :src="event.image" :alt="event.title" class="card-image" />
           </div>
 
@@ -404,7 +463,7 @@ const navigateToDetail = (id) => {
             <!-- Category Badge & Location -->
             <div class="card-badge-row">
               <span class="card-badge">{{ event.category }}</span>
-              <span class="card-location">{{ event.location }}</span>
+              <span class="card-location">{{ translateLocation(event.location) }}</span>
             </div>
 
             <!-- Title -->
@@ -415,7 +474,7 @@ const navigateToDetail = (id) => {
               <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span>{{ event.day }} {{ event.month }} {{ event.year }}</span>
+              <span>{{ event.day }} {{ translateMonth(event.month) }} {{ event.year }}</span>
             </div>
 
             <!-- Location -->
@@ -424,13 +483,13 @@ const navigateToDetail = (id) => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span>{{ event.venue }}</span>
+              <span>{{ translateVenue(event.venue) }}</span>
             </div>
 
             <!-- Price & Action -->
             <div class="card-price-row">
               <div class="price-box">
-                <span class="price-lbl">Mulai dari</span>
+                <span class="price-lbl">{{ t('mulaiDari') }}</span>
                 <span class="price-val">Rp {{ formatPrice(event.price) }}</span>
               </div>
               <!-- Active Upcoming Ticket Link -->
@@ -440,7 +499,7 @@ const navigateToDetail = (id) => {
                 class="pilih-tiket-btn"
                 @click.prevent="navigateToDetail(event.id)"
               >
-                <span>{{ activeCategoryTab === 'UPCOMING' ? 'UPCOMING' : 'LIHAT TIKET' }}</span>
+                <span>{{ activeCategoryTab === 'UPCOMING' ? t('upcoming') : t('lihatTiket') }}</span>
                 <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
                 </svg>
@@ -452,16 +511,26 @@ const navigateToDetail = (id) => {
                 class="pilih-tiket-btn past-event-btn" 
                 disabled
               >
-                <span>LIHAT TIKET</span>
+                <span>{{ t('lihatTiket') }}</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Load More Button -->
+      <div v-if="filteredEvents.length > 3 && !isExpanded" class="load-more-wrapper">
+        <button class="load-more-btn" @click="isExpanded = true">
+          <span>{{ t('lihatLebihBanyak') }}</span>
+          <svg class="btn-arrow-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
       <!-- Empty State -->
       <div v-if="filteredEvents.length === 0" class="empty-events-state">
-        <p>Tidak ada event yang ditemukan dalam kategori ini.</p>
+        <p>{{ t('noEvents') }}</p>
       </div>
 
     </div>
@@ -536,7 +605,7 @@ const navigateToDetail = (id) => {
   aspect-ratio: 1.6 / 1;
   background-color: #141414;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .hero-banner-image {
@@ -650,24 +719,25 @@ const navigateToDetail = (id) => {
 /* ========================================== */
 .events-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
   margin-bottom: 4rem;
 }
 
 .grid-event-card {
   position: relative;
   background-color: #141414;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
+  border-radius: 16px;
 }
 
 .grid-event-card:hover {
   transform: translateY(-6px);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 16px 35px rgba(0, 0, 0, 0.85);
 }
 
@@ -718,13 +788,15 @@ const navigateToDetail = (id) => {
   aspect-ratio: 16 / 9;
   background-color: #0B0B0B;
   overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%) contrast(1.1) brightness(0.85);
+  filter: brightness(0.9) contrast(1.05);
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -756,6 +828,7 @@ const navigateToDetail = (id) => {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  border-radius: 8px;
 }
 
 .card-location {
@@ -844,6 +917,7 @@ const navigateToDetail = (id) => {
   text-transform: uppercase;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+  border-radius: 8px;
 }
 
 .pilih-tiket-btn:hover,
@@ -886,6 +960,49 @@ const navigateToDetail = (id) => {
 }
 
 /* Styling placeholder deleted pagination */
+.load-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  margin-bottom: 4rem;
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.85rem 2rem;
+  background-color: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.load-more-btn:hover {
+  background-color: #FFFFFF;
+  color: #000000;
+  border-color: #FFFFFF;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-arrow-down {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.load-more-btn:hover .btn-arrow-down {
+  transform: translateY(3px);
+}
 
 /* ========================================== */
 /* RESPONSIVE MEDIA QUERIES                   */

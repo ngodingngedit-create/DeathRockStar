@@ -9,6 +9,7 @@ import MerchPage from './components/MerchPage.vue'
 import EventsPage from './components/EventsPage.vue'
 import EventDetailPage from './components/EventDetailPage.vue'
 import Footer from './components/Footer.vue'
+import MobileBottomNav from './components/MobileBottomNav.vue'
 
 const currentRoute = ref(window.location.hash)
 const selectedEventId = ref(1)
@@ -69,6 +70,9 @@ onMounted(() => {
 
     <!-- Footer -->
     <Footer />
+
+    <!-- Mobile Bottom Navigation (separate component, mobile-only) -->
+    <MobileBottomNav />
   </div>
 </template>
 
