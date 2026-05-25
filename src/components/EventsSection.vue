@@ -316,7 +316,7 @@ const navigateToDetail = (id) => {
   height: 100%;
   background-size: cover;
   background-position: center;
-  filter: grayscale(100%) contrast(1.1) brightness(0.85);
+  filter: brightness(0.82);
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

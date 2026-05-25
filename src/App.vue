@@ -8,6 +8,7 @@ import EventsSection from './components/EventsSection.vue'
 import MerchPage from './components/MerchPage.vue'
 import EventsPage from './components/EventsPage.vue'
 import EventDetailPage from './components/EventDetailPage.vue'
+import TransactionEvent from './components/TransactionEvent.vue'
 import Footer from './components/Footer.vue'
 import MobileBottomNav from './components/MobileBottomNav.vue'
 
@@ -47,7 +48,7 @@ onMounted(() => {
     <div class="noise-overlay"></div>
 
     <!-- Header / Navbar -->
-    <Navbar />
+    <Navbar v-if="currentRoute !== '#transaction-event'" />
 
     <!-- Main Page Sections -->
     <main>
@@ -56,6 +57,9 @@ onMounted(() => {
       </div>
       <div v-else-if="currentRoute === '#events-page'">
         <EventsPage />
+      </div>
+      <div v-else-if="currentRoute === '#transaction-event'">
+        <TransactionEvent />
       </div>
       <div v-else-if="isEventDetail">
         <EventDetailPage :eventId="selectedEventId" />
@@ -69,10 +73,10 @@ onMounted(() => {
     </main>
 
     <!-- Footer -->
-    <Footer />
+    <Footer v-if="currentRoute !== '#transaction-event'" />
 
     <!-- Mobile Bottom Navigation (separate component, mobile-only) -->
-    <MobileBottomNav />
+    <MobileBottomNav v-if="currentRoute !== '#transaction-event'" />
   </div>
 </template>
 

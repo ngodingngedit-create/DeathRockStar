@@ -612,7 +612,7 @@ const translateMonth = (m) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%) contrast(1.1) brightness(0.85);
+  filter: brightness(0.82);
 }
 
 .fade-overlay {

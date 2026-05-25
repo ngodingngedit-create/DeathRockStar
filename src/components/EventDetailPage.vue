@@ -617,11 +617,23 @@ const handleOrderNow = () => {
       : 'Please select at least 1 ticket first!')
     return
   }
-  alert(currentLang.value === 'id'
-    ? `Checkout Simulasi Berhasil!\nTotal Pembelian: ${totalQty.value} Tiket\nTotal Harga: Rp ${formatPrice(totalPrice.value)}\n\nTerima kasih telah mendukung pergerakan musik! 🤘`
-    : `Checkout Simulation Successful!\nTotal Purchase: ${totalQty.value} Tickets\nTotal Price: Rp ${formatPrice(totalPrice.value)}\n\nThank you for supporting the music movement! 🤘`)
-  // Reset counters after order
-  initializeTickets()
+  
+  // Save selected tickets data to localStorage to read in TransactionEvent
+  const checkoutData = {
+    eventId: props.eventId,
+    tickets: ticketTiers.value.filter(t => t.qty > 0).map(t => ({
+      id: t.id,
+      name: getTierName(t.id),
+      price: t.price,
+      qty: t.qty
+    })),
+    totalPrice: totalPrice.value,
+    totalQty: totalQty.value
+  }
+  localStorage.setItem('kolektix_checkout', JSON.stringify(checkoutData))
+
+  // Redirect to the Checkout Page!
+  window.location.hash = '#transaction-event'
   isBottomSheetOpen.value = false
 }
 
@@ -737,28 +749,61 @@ const toggleTicketTier = (tier) => {
             </div>
           </div>
           
-          <!-- Bottom Row: Event Metadata Summary -->
-          <div class="hero-meta-summary">
-            <div class="meta-item">
-              <span class="meta-lbl">{{ currentLang === 'id' ? 'TANGGAL' : 'DATE' }}</span>
-              <span class="meta-val">{{ currentEvent.day }} {{ translateMonth(currentEvent.month) }} {{ currentEvent.year }}</span>
+          <!-- Main Content Split: Poster Image on Left, Metadata on Right -->
+          <div class="hero-main-split">
+            <!-- Left Side: Poster -->
+            <div class="hero-poster-col">
+              <div class="hero-poster-wrapper">
+                <img :src="currentEvent.image" :alt="currentEvent.title" class="hero-poster-img" />
+              </div>
             </div>
             
-            <div class="meta-item">
-              <span class="meta-lbl">{{ currentLang === 'id' ? 'WAKTU' : 'TIME' }}</span>
-              <span class="meta-val">{{ translateTime(currentEvent.time) }}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-lbl">{{ currentLang === 'id' ? 'LOKASI' : 'LOCATION' }}</span>
-              <span class="meta-val">{{ translateLocation(currentEvent.location) }}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-lbl">{{ currentLang === 'id' ? 'PENYELENGGARA' : 'ORGANIZER' }}</span>
-              <div class="organizer-badge-stack">
-                <span class="organizer-badge-avatar">{{ getOrganizerLetter }}</span>
-                <span class="organizer-name">{{ eventOrganizer }}</span>
+            <!-- Right Side: Details list -->
+            <div class="hero-info-col">
+              <div class="hero-meta-list">
+                <!-- Date & Time -->
+                <div class="meta-item">
+                  <svg class="meta-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div class="meta-content-block">
+                    <span class="meta-title-bold">{{ formatEventDayAndDate(currentEvent.date) }}</span>
+                    <span class="meta-subtitle-grey">{{ translateTime(cleanTimeRange) }}</span>
+                  </div>
+                </div>
+                
+                <!-- Location -->
+                <div class="meta-item">
+                  <svg class="meta-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <div class="meta-content-block">
+                    <span class="meta-title-bold">{{ translateVenue(currentEvent.venue) }}</span>
+                    <span class="meta-subtitle-grey">{{ translateAddress(currentEvent.address) }}</span>
+                  </div>
+                </div>
+                
+                <!-- Tags/Category -->
+                <div class="meta-item">
+                  <svg class="meta-icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.36 1.248.586 1.813l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.17 0l-3.97 2.883c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.97-2.883c-.773-.565-.374-1.813.586-1.813h4.906a1 1 0 00.95-.69l1.519-4.674z" />
+                  </svg>
+                  <div class="meta-content-block">
+                    <span class="meta-title-bold">{{ currentEvent.category }} • {{ currentLang === 'id' ? 'Musik' : 'Music' }}</span>
+                  </div>
+                </div>
+                
+                <!-- Organizer block -->
+                <div class="organizer-profile-block">
+                  <div class="organizer-avatar-circle">
+                    <span class="organizer-letter">{{ getOrganizerLetter }}</span>
+                  </div>
+                  <div class="organizer-text-info">
+                    <span class="organizer-label">{{ currentLang === 'id' ? 'PENYELENGGARA' : 'ORGANIZER' }}</span>
+                    <span class="organizer-name">{{ eventOrganizer }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1526,7 +1571,7 @@ const toggleTicketTier = (tier) => {
 
 .hero-poster-wrapper {
   width: 100%;
-  aspect-ratio: 2.9 / 1; /* make poster slightly taller at the bottom */
+  aspect-ratio: 3.2 / 1; /* beautifully wide and shorter height banner ratio */
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
@@ -1845,7 +1890,7 @@ const toggleTicketTier = (tier) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%) contrast(1.1) brightness(0.75);
+  filter: brightness(0.75);
 }
 
 .artist-overlay {
@@ -2542,7 +2587,7 @@ const toggleTicketTier = (tier) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%) contrast(1.1) brightness(0.8);
+  filter: brightness(0.8);
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
