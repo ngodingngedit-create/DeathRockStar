@@ -410,18 +410,25 @@ const rules = ref([
 
 // Ticket Tier selection counters
 const ticketTiers = ref([
-  { id: 'presale', name: 'PRESALE', price: 0, qty: 0, label: 'Tiket terbatas' },
-  { id: 'normal', name: 'NORMAL', price: 0, qty: 0, label: '' },
-  { id: 'ots', name: 'ON THE SPOT', price: 0, qty: 0, label: '(jika masih tersedia)' }
+  { id: 'normal', name: 'GELOMBANG AWAL OTW NORMAL', price: 0, qty: 0, status: 'aktif' },
+  { id: 'ramean', name: 'GELOMBANG RAMEAN (BUNDLING 4 ORANG)', price: 0, qty: 0, status: 'habis' },
+  { id: 'vip', name: 'VIP ACCESS EXPERIENCE', price: 0, originalPrice: 0, discountLabel: '', qty: 0, status: 'aktif' }
 ])
+
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return ''
+  const dateObj = new Date(dateStr)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+  return `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+}
 
 // Reset ticket counters and adjust prices dynamically when active event changes
 const initializeTickets = () => {
   const basePrice = currentEvent.value.price
   ticketTiers.value = [
-    { id: 'presale', name: 'PRESALE', price: Math.round(basePrice * 0.75), qty: 0, label: 'Tiket terbatas' },
-    { id: 'normal', name: 'NORMAL', price: basePrice, qty: 0, label: '' },
-    { id: 'ots', name: 'ON THE SPOT', price: Math.round(basePrice * 1.25), qty: 0, label: '(jika masih tersedia)' }
+    { id: 'normal', name: 'GELOMBANG AWAL OTW NORMAL', price: basePrice, qty: 0, status: 'aktif' },
+    { id: 'ramean', name: 'GELOMBANG RAMEAN (BUNDLING 4 ORANG)', price: Math.round(basePrice * 0.75), qty: 0, status: 'habis' },
+    { id: 'vip', name: 'VIP ACCESS EXPERIENCE', price: Math.round(basePrice * 1.2), originalPrice: Math.round(basePrice * 1.5), discountLabel: 'PROMO RILIS', qty: 0, status: 'aktif' }
   ]
 }
 
@@ -432,12 +439,12 @@ watch(() => props.eventId, () => {
 }, { immediate: true })
 
 const incrementQty = (tier) => {
-  if (isPastEvent.value) return
+  if (isPastEvent.value || tier.status === 'habis') return
   tier.qty++
 }
 
 const decrementQty = (tier) => {
-  if (isPastEvent.value) return
+  if (isPastEvent.value || tier.status === 'habis') return
   if (tier.qty > 0) tier.qty--
 }
 
@@ -508,6 +515,47 @@ const handleOrderNow = () => {
 const copyLink = () => {
   navigator.clipboard.writeText(window.location.href)
   alert('Link detail event berhasil disalin ke clipboard!')
+}
+
+// Active tab state: 'deskripsi', 'tiket', or 'syarat'
+const activeTab = ref('deskripsi')
+
+// Minimum price starting from (PRESALE price, which is 75% of base price)
+const startingPrice = computed(() => {
+  return Math.round(currentEvent.value.price * 0.75)
+})
+
+// Scroll/Navigate to tickets tab
+const scrollToTickets = () => {
+  activeTab.value = 'tiket'
+  setTimeout(() => {
+    const tabsElement = document.querySelector('.event-detail-tabs-nav')
+    if (tabsElement) {
+      tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, 50)
+}
+
+// Chat simulator handler
+const handleChatPenyelenggara = () => {
+  alert(`Membuka Chat dengan Penyelenggara: ${eventOrganizer.value}\n\nFitur ini adalah simulasi chat untuk bertanya seputar event. 💬`)
+}
+
+// Sidebar accordion expansion states
+const isSidebarInfoExpanded = ref(true)
+const isSidebarVenueExpanded = ref(true)
+const isSidebarShareExpanded = ref(true)
+
+// Ticket card accordion expansion states
+const expandedTicketTiers = ref({
+  normal: true,
+  ramean: false,
+  vip: false
+})
+
+const toggleTicketTier = (tier) => {
+  if (tier.status === 'habis' || isPastEvent.value) return
+  expandedTicketTiers.value[tier.id] = !expandedTicketTiers.value[tier.id]
 }
 </script>
 
@@ -623,198 +671,452 @@ const copyLink = () => {
         </div>
       </header>
 
+      <!-- Event Details Tabs Navigation -->
+      <div class="event-detail-tabs-nav">
+        <button 
+          class="tab-nav-btn" 
+          :class="{ active: activeTab === 'deskripsi' }" 
+          @click="activeTab = 'deskripsi'"
+        >
+          DESKRIPSI
+        </button>
+        <button 
+          class="tab-nav-btn" 
+          :class="{ active: activeTab === 'tiket' }" 
+          @click="activeTab = 'tiket'"
+        >
+          TIKET
+        </button>
+        <button 
+          class="tab-nav-btn" 
+          :class="{ active: activeTab === 'syarat' }" 
+          @click="activeTab = 'syarat'"
+        >
+          <span class="desktop-tab-label">SYARAT & KETENTUAN</span>
+          <span class="mobile-tab-label">S&K</span>
+        </button>
+      </div>
+
       <!-- Main Split Layout Columns -->
       <div class="detail-split-layout">
         
         <!-- Left Content Column (65%) -->
         <main class="detail-main-content">
           
-          <!-- Tentang Event Section -->
-          <section class="content-section">
-            <h2 class="section-heading">TENTANG EVENT</h2>
-            <p class="event-description-text">{{ currentEvent.desc }}</p>
-          </section>
+          <!-- Tab Content: Deskripsi -->
+          <div v-if="activeTab === 'deskripsi'" class="tab-content-pane">
+            <!-- Tentang Event Section -->
+            <section class="content-section">
+              <h2 class="section-heading">TENTANG EVENT</h2>
+              <p class="event-description-text">{{ currentEvent.desc }}</p>
+            </section>
 
-          <!-- Lineup Carousel Section -->
-          <section class="content-section">
-            <div class="section-header-row">
-              <h2 class="section-heading">LINEUP</h2>
-              <div class="carousel-nav-arrows">
-                <button class="nav-arrow" @click="scrollLineup('left')">&lt;</button>
-                <button class="nav-arrow" @click="scrollLineup('right')">&gt;</button>
-              </div>
-            </div>
-
-            <div class="lineup-carousel-wrapper" ref="lineupScrollRef">
-              <div v-for="artist in lineup" :key="artist.name" class="lineup-card">
-                <div class="artist-image-box">
-                  <img :src="artist.image" :alt="artist.name" class="artist-img" />
-                  <div class="artist-overlay"></div>
-                </div>
-                <span class="artist-name">{{ artist.name }}</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Jadwal Event (Rundown) Section -->
-          <section class="content-section">
-            <h2 class="section-heading">JADWAL EVENT</h2>
-            
-            <div class="rundown-timeline">
-              <div v-for="(item, idx) in rundown" :key="idx" class="timeline-node">
-                <!-- Line indicator -->
-                <div class="node-line-indicator">
-                  <div class="node-bullet"></div>
-                  <div v-if="idx < rundown.length - 1" class="node-connecting-line"></div>
-                </div>
-                
-                <div class="node-content">
-                  <span class="node-time">{{ item.time }}</span>
-                  <span class="node-activity">{{ item.activity }}</span>
+            <!-- Lineup Carousel Section -->
+            <section class="content-section">
+              <div class="section-header-row">
+                <h2 class="section-heading">LINEUP</h2>
+                <div class="carousel-nav-arrows">
+                  <button class="nav-arrow" @click="scrollLineup('left')">&lt;</button>
+                  <button class="nav-arrow" @click="scrollLineup('right')">&gt;</button>
                 </div>
               </div>
-            </div>
-          </section>
 
-          <!-- Aturan Event Section -->
-          <section class="content-section">
-            <h2 class="section-heading">ATURAN EVENT</h2>
-            
-            <ul class="event-rules-list">
-              <li v-for="(rule, idx) in rules" :key="idx" class="rule-item">
-                <div class="rule-icon-box" :class="rule.icon">
-                  <!-- Check Icon -->
-                  <svg v-if="rule.icon === 'check'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="rule-svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <!-- Cross Icon -->
-                  <svg v-else-if="rule.icon === 'cross'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="rule-svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <!-- Warning/Info Icon -->
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="rule-svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+              <div class="lineup-carousel-wrapper" ref="lineupScrollRef">
+                <div v-for="artist in lineup" :key="artist.name" class="lineup-card">
+                  <div class="artist-image-box">
+                    <img :src="artist.image" :alt="artist.name" class="artist-img" />
+                    <div class="artist-overlay"></div>
+                  </div>
+                  <span class="artist-name">{{ artist.name }}</span>
                 </div>
-                <span class="rule-text">{{ rule.text }}</span>
-              </li>
-            </ul>
-          </section>
+              </div>
+            </section>
 
+            <!-- Jadwal Event (Rundown) Section -->
+            <section class="content-section">
+              <h2 class="section-heading">JADWAL EVENT</h2>
+              
+              <div class="rundown-timeline">
+                <div v-for="(item, idx) in rundown" :key="idx" class="timeline-node">
+                  <!-- Line indicator -->
+                  <div class="node-line-indicator">
+                    <div class="node-bullet"></div>
+                    <div v-if="idx < rundown.length - 1" class="node-connecting-line"></div>
+                  </div>
+                  
+                  <div class="node-content">
+                    <span class="node-time">{{ item.time }}</span>
+                    <span class="node-activity">{{ item.activity }}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Tab Content: Tiket -->
+          <div v-else-if="activeTab === 'tiket'" class="tab-content-pane">
+            <section class="content-section main-ticket-selector">
+              <h2 class="section-heading">PILIH TIKET</h2>
+              
+              <div class="ticket-list-stub-wrapper">
+                <div 
+                  v-for="tier in ticketTiers" 
+                  :key="tier.id" 
+                  class="ticket-card-mockup" 
+                  :class="{ 
+                    'is-expanded': expandedTicketTiers[tier.id], 
+                    'is-sold-out': tier.status === 'habis' || isPastEvent 
+                  }"
+                >
+                  
+                  <!-- Card Header -->
+                  <div 
+                    class="ticket-card-header" 
+                    :class="{ 'is-disabled': tier.status === 'habis' || isPastEvent }"
+                    @click="toggleTicketTier(tier)"
+                  >
+                    <div class="header-left-col">
+                      <h3 class="tier-title-mockup">{{ tier.name }}</h3>
+                      <span class="tier-status-badge" :class="{ 'sold-out': tier.status === 'habis' || isPastEvent }">
+                        {{ (tier.status === 'habis' || isPastEvent) ? '• TIKET HABIS' : '• PENJUALAN BERLANGSUNG' }}
+                      </span>
+                    </div>
+                    
+                    <div class="header-mid-divider"></div>
+                    
+                    <div class="header-right-col">
+                      <div class="header-price-info">
+                        <span class="price-lbl">Harga</span>
+                        <div class="price-details-stack">
+                          <div v-if="tier.originalPrice" class="discount-meta-row">
+                            <span class="original-price">Rp {{ formatPrice(tier.originalPrice) }}</span>
+                            <span class="discount-tag">{{ tier.discountLabel }}</span>
+                          </div>
+                          <span class="price-val">Rp {{ formatPrice(tier.price) }}</span>
+                        </div>
+                      </div>
+                      <svg class="chevron-expand-icon" :class="{ rotated: expandedTicketTiers[tier.id] }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Collapsible Content -->
+                  <transition name="accordion-slide">
+                    <div v-show="expandedTicketTiers[tier.id]" class="ticket-card-body">
+                      <!-- TANGGAL EVENT -->
+                      <div class="body-info-section">
+                        <span class="info-section-title">TANGGAL EVENT</span>
+                        <div class="info-date-row">
+                          <!-- Calendar Icon -->
+                          <div class="calendar-icon-block">
+                            <span class="cal-month">{{ currentEvent.month }}</span>
+                            <span class="cal-day">{{ currentEvent.day }}</span>
+                          </div>
+                          <span class="cal-desc-text">Masa berlaku: {{ formatShortDate(currentEvent.date) }}</span>
+                        </div>
+                      </div>
+
+                      <!-- INFORMASI TIKET -->
+                      <div class="body-info-section">
+                        <span class="info-section-title">INFORMASI TIKET</span>
+                        <div class="info-bullets-row">
+                          <div class="bullet-item">
+                            <svg class="bullet-icon cross" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>Tidak Bisa Refund</span>
+                          </div>
+                          <div class="bullet-item">
+                            <svg class="bullet-icon check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Konfirmasi Instan</span>
+                          </div>
+                          <div class="bullet-item">
+                            <svg class="bullet-icon tax" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Termasuk Pajak 10%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- DESKRIPSI TIKET -->
+                      <div class="body-info-section">
+                        <span class="info-section-title">DESKRIPSI TIKET</span>
+                        <p class="ticket-description-para">
+                          Tiket reguler untuk akses {{ currentEvent.title }} kategori {{ tier.name }}. Nikmati pertunjukan audio-visual spektakuler dan dukung pergerakan musik independen lokal!
+                        </p>
+                      </div>
+
+                      <!-- BENEFIT -->
+                      <div class="body-info-section">
+                        <span class="info-section-title">BENEFIT</span>
+                        <div class="benefits-list">
+                          <div class="benefit-bullet">
+                            <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Akses masuk konser</span>
+                          </div>
+                          <div class="benefit-bullet">
+                            <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Area festival (standing)</span>
+                          </div>
+                          <div class="benefit-bullet">
+                            <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Akses ke booth merchandise resmi</span>
+                          </div>
+                          <div class="benefit-bullet">
+                            <svg class="benefit-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Tidak termasuk meet & greet artis</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </transition>
+
+                  <!-- Card Footer -->
+                  <div class="ticket-card-footer">
+                    <!-- Date info (grid-area: date) -->
+                    <div class="footer-left-col">
+                      <span class="footer-label">BERAKHIR PADA</span>
+                      <span class="footer-time">{{ formatShortDate(currentEvent.date) }}, 22:00 WIB</span>
+                    </div>
+                    
+                    <!-- Action Button/Stepper (grid-area: action) -->
+                    <button 
+                      v-if="tier.qty === 0 && tier.status !== 'habis' && !isPastEvent"
+                      class="btn-add-ticket"
+                      @click="incrementQty(tier)"
+                    >
+                      + Tambah
+                    </button>
+                    <button 
+                      v-else-if="tier.status === 'habis' || isPastEvent"
+                      class="btn-sold-out-ticket"
+                      disabled
+                    >
+                      Habis
+                    </button>
+                    <div v-else class="tier-stepper-mockup">
+                      <button class="step-btn-mock minus" @click="decrementQty(tier)">-</button>
+                      <span class="step-qty-mock">{{ tier.qty }}</span>
+                      <button class="step-btn-mock plus" @click="incrementQty(tier)">+</button>
+                    </div>
+                    
+                    <!-- Total price details (grid-area: total) -->
+                    <div class="footer-total-price-box">
+                      <span class="total-pax-lbl">Total ({{ tier.qty }} pax)</span>
+                      <span class="total-amount-lbl">Rp {{ formatPrice(tier.qty * tier.price) }}</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Tab Content: Syarat & Ketentuan -->
+          <div v-else-if="activeTab === 'syarat'" class="tab-content-pane">
+            <section class="content-section">
+              <h2 class="section-heading">SYARAT & KETENTUAN</h2>
+              
+              <ul class="event-rules-list">
+                <li v-for="(rule, idx) in rules" :key="idx" class="rule-item">
+                  <div class="rule-icon-box" :class="rule.icon">
+                    <!-- Check Icon -->
+                    <svg v-if="rule.icon === 'check'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="rule-svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <!-- Cross Icon -->
+                    <svg v-else-if="rule.icon === 'cross'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="rule-svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <!-- Warning/Info Icon -->
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="rule-svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <span class="rule-text">{{ rule.text }}</span>
+                </li>
+              </ul>
+            </section>
+          </div>
         </main>
 
         <!-- Right Sidebar Actions Column (35%) -->
         <aside class="detail-sidebar-actions">
           
-          <!-- Module Pilih Tiket Container -->
-          <div class="sidebar-block ticket-selector-module">
-            <h3 class="sidebar-block-title">PILIH TIKET</h3>
+          <!-- Module Info Harga & Navigasi Tiket Container -->
+          <div class="sidebar-block ticket-price-info-module" :class="{ 'hide-on-mobile-tiket': activeTab === 'tiket' }">
+            <h3 class="sidebar-block-title collapsible-header" @click="isSidebarInfoExpanded = !isSidebarInfoExpanded">
+              <span>{{ activeTab === 'tiket' ? 'RINGKASAN PESANAN' : 'INFO EVENT' }}</span>
+              <svg class="chevron-icon" :class="{ rotated: !isSidebarInfoExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </h3>
             
-            <div class="ticket-tiers-list">
-              <div v-for="tier in ticketTiers" :key="tier.id" class="ticket-tier-item">
-                <div class="tier-info">
-                  <span class="tier-name">{{ tier.name }}</span>
-                  <span class="tier-price">Rp {{ formatPrice(tier.price) }}</span>
-                  <span v-if="tier.label" class="tier-label">{{ tier.label }}</span>
-                </div>
+            <transition name="accordion-slide">
+              <div v-show="isSidebarInfoExpanded" class="sidebar-block-content">
                 
-                <!-- Stepper Counter -->
-                <div class="tier-stepper">
-                  <button class="step-btn minus" :disabled="isPastEvent || tier.qty === 0" @click="decrementQty(tier)">-</button>
-                  <span class="step-qty">{{ tier.qty }}</span>
-                  <button class="step-btn plus" :disabled="isPastEvent" @click="incrementQty(tier)">+</button>
+                <!-- Condition: TIKET TAB (Order Summary) -->
+                <div v-if="activeTab === 'tiket'" class="order-summary-box">
+                  <!-- Selected Items List -->
+                  <div class="summary-items-list">
+                    <template v-if="totalQty > 0">
+                      <div v-for="tier in ticketTiers" :key="tier.id">
+                        <div v-if="tier.qty > 0" class="summary-item-row">
+                          <div class="item-name-qty">
+                            <span class="item-name">{{ tier.name }}</span>
+                            <span class="item-qty">x{{ tier.qty }}</span>
+                          </div>
+                          <span class="item-subtotal">Rp {{ formatPrice(tier.qty * tier.price) }}</span>
+                        </div>
+                      </div>
+                    </template>
+                    <div v-else class="summary-empty-state">
+                      Belum ada tiket yang dipilih. Silakan pilih tiket di samping.
+                    </div>
+                  </div>
+
+                  <!-- Divider -->
+                  <div class="summary-divider"></div>
+
+                  <!-- Total Price -->
+                  <div class="summary-total-row">
+                    <div class="total-lbl-stack">
+                      <span class="total-main-lbl">TOTAL PEMBAYARAN</span>
+                      <span class="total-sub-lbl">({{ totalQty }} Tiket)</span>
+                    </div>
+                    <span class="total-price-val">Rp {{ formatPrice(totalPrice) }}</span>
+                  </div>
+
+                  
                 </div>
-              </div>
-            </div>
 
-            <!-- Dynamic Checkout Summary -->
-            <div class="ticket-summary-panel" v-if="totalQty > 0">
-              <div class="summary-row">
-                <span>Total Tiket:</span>
-                <span>{{ totalQty }}</span>
-              </div>
-              <div class="summary-row total-price-row">
-                <span>Subtotal:</span>
-                <span>Rp {{ formatPrice(totalPrice) }}</span>
-              </div>
-            </div>
+                <!-- Condition: DESKRIPSI or SYARAT TAB (Info Event starting price & Lihat Tiket) -->
+                <div v-else class="info-event-original-box">
+                  <div class="starting-price-box">
+                    <span class="price-label">HARGA MULAI DARI</span>
+                    <span class="price-amount">Rp {{ formatPrice(startingPrice) }}</span>
+                  </div>
 
-            <!-- Call to Actions -->
-            <div class="sidebar-buttons-group">
-              <button 
-                class="btn-primary-checkout" 
-                :disabled="isPastEvent"
-                @click="handleOrderNow"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                </svg>
-                <span>{{ isPastEvent ? 'TICKET SOLD OUT / SELESAI' : 'PILIH TIKET SEKARANG' }}</span>
-              </button>
+                  <!-- Call to Actions -->
+                  <div class="sidebar-buttons-group">
+                    <transition name="fade-slide">
+                      <button 
+                        class="btn-primary-checkout" 
+                        @click="scrollToTickets"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                        </svg>
+                        <span>LIHAT TIKET</span>
+                      </button>
+                    </transition>
 
-              <button class="btn-secondary-save" @click="toggleSave">
-                <svg class="btn-icon" :class="{ 'is-saved': isSaved }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-                <span>{{ isSaved ? 'EVENT TERSIMPAN' : 'SIMPAN EVENT' }}</span>
-              </button>
-            </div>
+                    <div class="secondary-actions-row">
+                      <button class="btn-secondary-chat" @click="handleChatPenyelenggara">
+                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>CHAT</span>
+                      </button>
+                      
+                      <button class="btn-secondary-save-half" @click="toggleSave">
+                        <svg class="btn-icon" :class="{ 'is-saved': isSaved }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <span>{{ isSaved ? 'TERSIMPAN' : 'SIMPAN' }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </transition>
           </div>
 
           <!-- Module Informasi Venue Container -->
-          <div class="sidebar-block venue-info-module">
-            <h3 class="sidebar-block-title">INFORMASI VENUE</h3>
+          <div class="sidebar-block venue-info-module" v-if="activeTab !== 'tiket'">
+            <h3 class="sidebar-block-title collapsible-header" @click="isSidebarVenueExpanded = !isSidebarVenueExpanded">
+              <span>INFORMASI VENUE</span>
+              <svg class="chevron-icon" :class="{ rotated: !isSidebarVenueExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </h3>
             
-            <div class="venue-detail-box">
-              <div class="venue-meta">
-                <svg class="venue-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <div class="venue-address-block">
-                  <span class="venue-title">{{ currentEvent.venue }}</span>
-                  <p class="venue-description">{{ currentEvent.address }}</p>
+            <transition name="accordion-slide">
+              <div v-show="isSidebarVenueExpanded" class="sidebar-block-content">
+                <div class="venue-detail-box">
+                  <div class="venue-meta">
+                    <svg class="venue-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div class="venue-address-block">
+                      <span class="venue-title">{{ currentEvent.venue }}</span>
+                      <p class="venue-description">{{ currentEvent.address }}</p>
+                    </div>
+                  </div>
+                  
+                  <a href="https://maps.google.com" target="_blank" class="btn-view-map">LIHAT PETA</a>
                 </div>
               </div>
-              
-              <a href="https://maps.google.com" target="_blank" class="btn-view-map">LIHAT PETA</a>
-            </div>
+            </transition>
           </div>
 
           <!-- Module Bagikan Event Container -->
           <div class="sidebar-block share-event-module">
-            <h3 class="sidebar-block-title">BAGIKAN EVENT</h3>
+            <h3 class="sidebar-block-title collapsible-header" @click="isSidebarShareExpanded = !isSidebarShareExpanded">
+              <span>BAGIKAN EVENT</span>
+              <svg class="chevron-icon" :class="{ rotated: !isSidebarShareExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </h3>
             
-            <div class="social-share-buttons">
-              <!-- WhatsApp -->
-              <a href="https://api.whatsapp.com" target="_blank" class="share-circle-btn" aria-label="Share on WhatsApp">
-                <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.963 3.41 1.472 5.358 1.473 5.485.002 9.948-4.468 9.95-9.96.001-2.66-1.037-5.163-2.92-7.05-1.884-1.889-4.387-2.93-7.054-2.932-5.489 0-9.956 4.462-9.959 9.95-.001 1.83.479 3.619 1.39 5.215L2.392 21.66l6.255-1.642zm9.961-6.732c-.324-.162-1.92-.949-2.217-1.058-.297-.108-.513-.162-.73.162-.216.324-.838 1.058-1.027 1.274-.19.216-.378.243-.702.081-.324-.162-1.37-.505-2.61-1.611-.963-.859-1.613-1.921-1.802-2.246-.19-.324-.02-.5-.181-.661-.146-.146-.324-.378-.486-.568-.162-.19-.216-.324-.324-.541-.108-.216-.055-.405-.027-.567.027-.162.216-.513.324-.676.108-.162.162-.27.243-.459.081-.189.041-.351-.014-.513-.054-.162-.513-1.243-.703-1.702-.186-.445-.373-.385-.513-.392-.132-.007-.284-.008-.436-.008-.152 0-.401.057-.611.286-.21.23-.8.784-.8 1.91 0 1.126.82 2.215.933 2.368.113.152 1.612 2.463 3.908 3.45.546.235.973.376 1.306.481.549.174 1.049.15 1.444.09.44-.067 1.92-.784 2.19-1.541.27-.756.27-1.405.189-1.541-.081-.136-.297-.216-.622-.378z"/>
-                </svg>
-              </a>
-              
-              <!-- Twitter -->
-              <a href="https://twitter.com" target="_blank" class="share-circle-btn" aria-label="Share on Twitter">
-                <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                </svg>
-              </a>
-              
-              <!-- Facebook -->
-              <a href="https://facebook.com" target="_blank" class="share-circle-btn" aria-label="Share on Facebook">
-                <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </a>
-              
-              <!-- Copy Link -->
-              <button class="share-circle-btn" @click="copyLink" aria-label="Salin tautan event">
-                <svg class="share-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                </svg>
-              </button>
-            </div>
+            <transition name="accordion-slide">
+              <div v-show="isSidebarShareExpanded" class="sidebar-block-content">
+                <div class="social-share-buttons">
+                  <!-- WhatsApp -->
+                  <a href="https://api.whatsapp.com" target="_blank" class="share-circle-btn" aria-label="Share on WhatsApp">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.963 3.41 1.472 5.358 1.473 5.485.002 9.948-4.468 9.95-9.96.001-2.66-1.037-5.163-2.92-7.05-1.884-1.889-4.387-2.93-7.054-2.932-5.489 0-9.956 4.462-9.959 9.95-.001 1.83.479 3.619 1.39 5.215L2.392 21.66l6.255-1.642zm9.961-6.732c-.324-.162-1.92-.949-2.217-1.058-.297-.108-.513-.162-.73.162-.216.324-.838 1.058-1.027 1.274-.19.216-.378.243-.702.081-.324-.162-1.37-.505-2.61-1.611-.963-.859-1.613-1.921-1.802-2.246-.19-.324-.02-.5-.181-.661-.146-.146-.324-.378-.486-.568-.162-.19-.216-.324-.324-.541-.108-.216-.055-.405-.027-.567.027-.162.216-.513.324-.676.108-.162.162-.27.243-.459.081-.189.041-.351-.014-.513-.054-.162-.513-1.243-.703-1.702-.186-.445-.373-.385-.513-.392-.132-.007-.284-.008-.436-.008-.152 0-.401.057-.611.286-.21.23-.8.784-.8 1.91 0 1.126.82 2.215.933 2.368.113.152 1.612 2.463 3.908 3.45.546.235.973.376 1.306.481.549.174 1.049.15 1.444.09.44-.067 1.92-.784 2.19-1.541.27-.756.27-1.405.189-1.541-.081-.136-.297-.216-.622-.378z"/>
+                  </svg>
+                  </a>
+                  
+                  <!-- Twitter -->
+                  <a href="https://twitter.com" target="_blank" class="share-circle-btn" aria-label="Share on Twitter">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    </svg>
+                  </a>
+                  
+                  <!-- Facebook -->
+                  <a href="https://facebook.com" target="_blank" class="share-circle-btn" aria-label="Share on Facebook">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                  </a>
+                  
+                  <!-- Copy Link -->
+                  <button class="share-circle-btn" @click="copyLink" aria-label="Salin tautan event">
+                    <svg class="share-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </transition>
           </div>
 
         </aside>
@@ -856,61 +1158,114 @@ const copyLink = () => {
 
     </div>
 
-    <!-- Mobile Sticky Checkout Bottom Bar & Bottom Sheet Drawer -->
-    <div class="mobile-sticky-bottom-checkout" v-if="!isPastEvent">
-      <div class="checkout-bar-contents">
-        <div class="bar-summary">
-          <span class="bar-qty">{{ totalQty }} Tiket</span>
-          <span class="bar-price">Rp {{ formatPrice(totalPrice) }}</span>
+    <!-- Bottom Sheet Drawer backdrop -->
+    <transition name="fade">
+      <div v-if="isBottomSheetOpen" class="bottom-sheet-backdrop" @click="isBottomSheetOpen = false"></div>
+    </transition>
+
+    <!-- Bottom Sheet Drawer panel -->
+    <transition name="slide-up">
+      <div v-if="isBottomSheetOpen" class="bottom-sheet-drawer">
+        <div class="drawer-header">
+          <h4 class="drawer-title">RINGKASAN PESANAN</h4>
+          <button class="drawer-close-btn" @click="isBottomSheetOpen = false">&times;</button>
         </div>
-        <button class="btn-mobile-checkout" @click="toggleBottomSheet">
-          <span>{{ isBottomSheetOpen ? 'TUTUP' : 'BELI TIKET' }}</span>
-        </button>
-      </div>
-
-      <!-- Bottom Sheet Drawer backdrop -->
-      <transition name="fade">
-        <div v-if="isBottomSheetOpen" class="bottom-sheet-backdrop" @click="isBottomSheetOpen = false"></div>
-      </transition>
-
-      <!-- Bottom Sheet Drawer panel -->
-      <transition name="slide-up">
-        <div v-if="isBottomSheetOpen" class="bottom-sheet-drawer">
-          <div class="drawer-header">
-            <h4 class="drawer-title">PILIH TIKET</h4>
-            <button class="drawer-close-btn" @click="isBottomSheetOpen = false">&times;</button>
-          </div>
-          
-          <div class="drawer-body">
-            <div class="ticket-tiers-list">
-              <div v-for="tier in ticketTiers" :key="tier.id" class="ticket-tier-item">
-                <div class="tier-info">
-                  <span class="tier-name">{{ tier.name }}</span>
-                  <span class="tier-price">Rp {{ formatPrice(tier.price) }}</span>
-                  <span v-if="tier.label" class="tier-label">{{ tier.label }}</span>
+        
+        <div class="drawer-body">
+          <div class="order-summary-box">
+            <!-- Selected Items List -->
+            <div class="summary-items-list">
+              <template v-if="totalQty > 0">
+                <div v-for="tier in ticketTiers" :key="tier.id">
+                  <div v-if="tier.qty > 0" class="summary-item-row">
+                    <div class="item-name-qty">
+                      <span class="item-name">{{ tier.name }}</span>
+                      <span class="item-qty">x{{ tier.qty }}</span>
+                    </div>
+                    <span class="item-subtotal">Rp {{ formatPrice(tier.qty * tier.price) }}</span>
+                  </div>
                 </div>
-                
-                <!-- Stepper Counter -->
-                <div class="tier-stepper">
-                  <button class="step-btn minus" :disabled="tier.qty === 0" @click="decrementQty(tier)">-</button>
-                  <span class="step-qty">{{ tier.qty }}</span>
-                  <button class="step-btn plus" @click="incrementQty(tier)">+</button>
-                </div>
+              </template>
+              <div v-else class="summary-empty-state">
+                Belum ada tiket yang dipilih.
               </div>
             </div>
           </div>
-          
-          <div class="drawer-footer">
-            <div class="drawer-total-row">
-              <span>Total Biaya:</span>
-              <span class="drawer-total-price">Rp {{ formatPrice(totalPrice) }}</span>
-            </div>
-            <button class="drawer-checkout-btn" :disabled="totalQty === 0" @click="handleOrderNow">
-              PILIH TIKET SEKARANG
+        </div>
+      </div>
+    </transition>
+
+    <!-- Universal Sticky Bottom Bar -->
+    <div class="event-detail-bottom-bar" v-if="!isPastEvent">
+      <div class="container bottom-bar-container">
+        
+        <!-- Desktop Layout -->
+        <div class="bottom-bar-desktop-only">
+          <div class="bottom-bar-left">
+            <span class="bottom-bar-price-label">
+              {{ activeTab === 'tiket' ? `HARGA (${totalQty}) TIKET` : 'HARGA MULAI DARI' }}
+            </span>
+            <span class="bottom-bar-price-amount">
+              Rp {{ formatPrice(activeTab === 'tiket' ? totalPrice : startingPrice) }}
+            </span>
+          </div>
+          <div class="bottom-bar-right">
+            <button 
+              v-if="activeTab === 'deskripsi' || activeTab === 'syarat'"
+              class="btn-bottom-action btn-lihat-tiket" 
+              @click="scrollToTickets"
+            >
+              LIHAT TIKET
+            </button>
+            <button 
+              v-else-if="activeTab === 'tiket'"
+              class="btn-bottom-action btn-beli-tiket" 
+              @click="handleOrderNow"
+            >
+              BELI TIKET
             </button>
           </div>
         </div>
-      </transition>
+
+        <!-- Mobile Layout -->
+        <div class="bottom-bar-mobile-only">
+          <!-- Simple info bottom bar if not ticket tab -->
+          <div v-if="activeTab !== 'tiket'" class="mobile-simple-bar">
+            <div class="bottom-bar-left">
+              <span class="bottom-bar-price-label">HARGA MULAI DARI</span>
+              <span class="bottom-bar-price-amount">Rp {{ formatPrice(startingPrice) }}</span>
+            </div>
+            <button class="btn-bottom-action btn-lihat-tiket" @click="scrollToTickets">
+              LIHAT TIKET
+            </button>
+          </div>
+
+          <!-- Ticket selection bottom bar with two rows -->
+          <div v-else class="mobile-checkout-bar">
+            <div class="checkout-bar-row-top">
+              <div class="bar-price-stack">
+                <span class="bar-price-lbl">TOTAL HARGA</span>
+                <span class="bar-price-val">Rp {{ formatPrice(totalPrice) }}</span>
+              </div>
+              <button class="btn-detail-toggle" @click="toggleBottomSheet">
+                <span>({{ totalQty }}) Detail</span>
+                <span class="caret-icon">{{ isBottomSheetOpen ? '▼' : '▲' }}</span>
+              </button>
+            </div>
+            <div class="checkout-bar-row-bottom">
+              <button class="btn-beli-sekarang" @click="handleOrderNow" :disabled="totalQty === 0">
+                Beli Tiket Sekarang
+              </button>
+              <button class="btn-chat-mobile" @click="handleChatPenyelenggara">
+                <svg class="chat-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
   </div>
@@ -920,7 +1275,7 @@ const copyLink = () => {
 .event-detail-page {
   background-color: #0B0B0B;
   color: #FFFFFF;
-  padding: 8rem 0 8rem 0;
+  padding: 8rem 0 10rem 0; /* Add bottom padding to prevent bottom bar from overlapping content */
   min-height: 100vh;
   text-align: left;
 }
@@ -1730,6 +2085,155 @@ const copyLink = () => {
   background-color: rgba(255, 255, 255, 0.02);
 }
 
+/* ========================================== */
+/* TABS NAVIGATION STYLES                     */
+/* ========================================== */
+.event-detail-tabs-nav {
+  position: sticky;
+  top: 90px;
+  z-index: 99;
+  background-color: #0B0B0B;
+  display: flex;
+  gap: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 2.5rem;
+  padding-bottom: 0.2rem;
+}
+
+.tab-nav-btn {
+  background: none;
+  border: none;
+  color: #8E8E8E;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 1rem 0;
+  position: relative;
+  transition: color 0.25s ease;
+}
+
+.mobile-tab-label {
+  display: none;
+}
+
+.desktop-tab-label {
+  display: inline;
+}
+
+.tab-nav-btn:hover {
+  color: #FFFFFF;
+}
+
+.tab-nav-btn.active {
+  color: #FFFFFF;
+}
+
+.tab-nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #FFFFFF;
+}
+
+/* ========================================== */
+/* SIDEBAR PRICE BANNER & ACTIONS             */
+/* ========================================== */
+.starting-price-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: left;
+}
+
+.price-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8E8E8E;
+}
+
+.price-amount {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  font-family: var(--font-body);
+}
+
+.secondary-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.btn-secondary-chat {
+  flex: 1;
+  background-color: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 1rem;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.btn-secondary-chat:hover {
+  border-color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.btn-secondary-save-half {
+  flex: 1;
+  background-color: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 1rem;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.btn-secondary-save-half:hover {
+  border-color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.checkout-actions-main {
+  margin-top: 1.5rem;
+}
+
+.main-ticket-selector {
+  background-color: #141414;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
 .btn-icon {
   width: 16px;
   height: 16px;
@@ -1966,10 +2470,730 @@ const copyLink = () => {
 }
 
 /* ========================================== */
-/* MOBILE STICKY BOTTOM CHECKOUT              */
+/* UNIVERSAL STICKY BOTTOM BAR STYLES        */
 /* ========================================== */
-.mobile-sticky-bottom-checkout {
+.event-detail-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.85rem 0;
+  z-index: 999;
+}
+
+.bottom-bar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bottom-bar-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.bottom-bar-price-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8E8E8E;
+}
+
+.bottom-bar-price-amount {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  font-family: var(--font-body);
+  margin-top: 2px;
+}
+
+.btn-bottom-action {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-lihat-tiket {
+  background-color: transparent;
+  color: #FFFFFF;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-lihat-tiket:hover {
+  background-color: #FFFFFF;
+  color: #000000;
+  border-color: #FFFFFF;
+  transform: translateY(-2px);
+}
+
+.btn-beli-tiket {
+  background-color: #FFFFFF;
+  color: #000000;
+  border: none;
+  font-weight: 900;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+}
+
+.btn-beli-tiket:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+}
+
+.btn-beli-tiket:disabled {
+  background-color: #222222;
+  color: #555555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ========================================== */
+/* TICKET CARD STUB STYLES                    */
+/* ========================================== */
+.ticket-list-stub-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ticket-card-mockup {
+  position: relative;
+  background-color: #1E1E1E;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+  color: #FFFFFF;
+}
+
+.ticket-card-mockup:hover:not(.is-sold-out) {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ticket-card-mockup.is-sold-out {
+  background-color: #161616;
+  border-color: rgba(255, 255, 255, 0.04);
+  cursor: not-allowed;
+}
+
+/* Header */
+.ticket-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2.25rem;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.ticket-card-header.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.header-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.header-mid-divider {
   display: none;
+}
+
+.tier-title-mockup {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.tier-status-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #00A389;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: #E6F8F5;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 0.25rem;
+}
+
+.tier-status-badge.sold-out {
+  color: #D32F2F;
+  background-color: #FDF2F2;
+}
+
+.header-right-col {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 1.5rem;
+}
+
+.header-price-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.price-lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.price-details-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.discount-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 2px;
+}
+
+.original-price {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.discount-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #D32F2F;
+  background-color: #FDF2F2;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.price-val {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-top: 1px;
+  font-family: var(--font-body);
+}
+
+.chevron-expand-icon {
+  width: 18px;
+  height: 18px;
+  color: #9CA3AF;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chevron-expand-icon.rotated {
+  transform: rotate(-180deg);
+}
+
+/* Collapsible Body */
+.ticket-card-body {
+  padding: 0 2.25rem 1.75rem 2.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1.75rem;
+}
+
+.body-info-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.body-info-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.info-section-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+}
+
+/* Date Row */
+.info-date-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Tear-off calendar icon */
+.calendar-icon-block {
+  display: flex;
+  flex-direction: column;
+  width: 44px;
+  height: 48px;
+  background-color: #1E1E1E;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.cal-month {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #9CA3AF;
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 2px 0;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cal-day {
+  color: #FFFFFF;
+  font-size: 1.15rem;
+  font-weight: 900;
+  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  background-color: #1E1E1E;
+}
+
+.cal-desc-text {
+  font-size: 0.9rem;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+/* Bullet Items */
+.info-bullets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.bullet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.bullet-icon {
+  width: 15px;
+  height: 15px;
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+
+/* Description Para */
+.ticket-description-para {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+/* Benefits list */
+.benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.benefit-bullet {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.benefit-check {
+  width: 14px;
+  height: 14px;
+  color: #c5a880;
+  flex-shrink: 0;
+}
+
+/* Card Footer - structured using CSS Grid */
+.ticket-card-footer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 
+    "date action"
+    "date total";
+  align-items: center;
+  gap: 0.5rem 2.25rem;
+  padding: 1.5rem 2.25rem;
+  background-color: #1E1E1E;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+/* Notches positioned exactly on the dashed separator line */
+.ticket-card-footer::before {
+  content: '';
+  position: absolute;
+  left: -13px;
+  top: 0;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  background-color: #0B0B0B;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  z-index: 5;
+}
+
+.ticket-card-footer::after {
+  content: '';
+  position: absolute;
+  right: -13px;
+  top: 0;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  background-color: #0B0B0B;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  z-index: 5;
+}
+
+.footer-left-col {
+  grid-area: date;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.footer-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #9CA3AF;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.footer-time {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-top: 4px;
+}
+
+.btn-add-ticket, .btn-sold-out-ticket, .tier-stepper-mockup {
+  grid-area: action;
+  justify-self: end;
+}
+
+/* TAMBAH Button - matching dark brown accent */
+.btn-add-ticket {
+  background-color: #2E1A16;
+  color: #FFFFFF;
+  border: 1px solid #2E1A16;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.6rem 1.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.btn-add-ticket:hover {
+  background-color: transparent;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+/* Sold Out / Habis Button */
+.btn-sold-out-ticket {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.6rem 1.75rem;
+  border-radius: 8px;
+  cursor: not-allowed;
+}
+
+/* Mockup Stepper */
+.tier-stepper-mockup {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background-color: #1E1E1E;
+  overflow: hidden;
+}
+
+.step-btn-mock {
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  width: 32px;
+  height: 32px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.step-btn-mock:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.step-qty-mock {
+  width: 32px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  user-select: none;
+}
+
+/* Total text in footer */
+.footer-total-price-box {
+  grid-area: total;
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.total-pax-lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #9CA3AF;
+}
+
+.total-amount-lbl {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-top: 2px;
+  font-family: var(--font-body);
+}
+
+/* ========================================== */
+/* SIDEBAR ORDER SUMMARY STYLES               */
+/* ========================================== */
+.order-summary-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.summary-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summary-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-name-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 70%;
+}
+
+.item-name {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-qty {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.item-subtotal {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.summary-empty-state {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+  line-height: 1.5;
+}
+
+.summary-divider {
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  width: 100%;
+}
+
+.summary-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.total-lbl-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.total-main-lbl {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.total-sub-lbl {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.total-price-val {
+  color: var(--text-primary);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+
+
+/* ========================================== */
+/* COLLAPSIBLE SIDEBAR ACCORDION STYLES       */
+/* ========================================== */
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.25s ease;
+}
+
+.collapsible-header:hover {
+  color: #A0A0A0;
+}
+
+.chevron-icon {
+  width: 18px;
+  height: 18px;
+  color: #8E8E8E;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chevron-icon.rotated {
+  transform: rotate(-180deg);
+}
+
+/* Accordion slide content wrapper */
+.sidebar-block-content {
+  margin-top: 1.5rem;
+}
+
+/* Animations and Transitions */
+.accordion-slide-enter-active,
+.accordion-slide-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 500px;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.accordion-slide-enter-from,
+.accordion-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 60px;
+  opacity: 1;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-bottom: 0;
+  transform: translateY(-10px);
+}
+
+/* Tab contents gap spacing */
+.tab-content-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 4.5rem; /* Wider spacing gap between sections in description tab */
 }
 
 /* ========================================== */
@@ -1997,6 +3221,24 @@ const copyLink = () => {
 
   .breadcrumb-nav {
     margin-bottom: 1.25rem;
+  }
+
+  .event-detail-tabs-nav {
+    position: sticky !important;
+    top: 65px !important;
+    z-index: 99 !important;
+    background-color: #0E0E0E !important;
+    margin-bottom: 1.5rem !important;
+    padding-bottom: 0 !important;
+    gap: 1.5rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  
+  .event-detail-tabs-nav .tab-nav-btn {
+    font-size: 0.75rem !important;
+    padding: 0.65rem 0 !important;
+    letter-spacing: 0.05em !important;
+    font-weight: 800 !important;
   }
 
   /* 1-column layout collapse */
@@ -2098,63 +3340,181 @@ const copyLink = () => {
     width: 70px;
   }
 
-  /* Mobile Ticket selection Module (Desktop sidebar version is hidden entirely) */
-  .ticket-selector-module {
-    display: none; /* Handled by sticky bottom sheet */
+  /* Hide the order summary sidebar block on mobile when on the tiket tab */
+  .hide-on-mobile-tiket {
+    display: none !important;
   }
 
-  /* ========================================== */
-  /* MOBILE STICKY BOTTOM CHECKOUT & DRAWER     */
-  /* ========================================== */
-  .mobile-sticky-bottom-checkout {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    left: 0;
+  /* Swap tab labels on mobile */
+  .mobile-tab-label {
+    display: inline !important;
+  }
+  .desktop-tab-label {
+    display: none !important;
+  }
+
+  /* Universal bottom bar responsive styling */
+  .bottom-bar-desktop-only {
+    display: none !important;
+  }
+  
+  .bottom-bar-mobile-only {
+    display: block !important;
     width: 100%;
-    background-color: #141414;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 1000;
   }
 
-  .checkout-bar-contents {
+  .bottom-bar-container {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .event-detail-bottom-bar {
+    background-color: #0E0E0E !important; /* Dark background matching website */
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 0.5rem 0 !important; /* Compact padding */
+    z-index: 1000 !important;
+  }
+
+  .mobile-simple-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    width: 100%;
+    padding: 0 1.5rem;
+  }
+  
+  .mobile-simple-bar .bottom-bar-price-label {
+    font-size: 0.55rem !important;
+    color: #9CA3AF !important;
   }
 
-  .bar-summary {
+  .mobile-simple-bar .bottom-bar-price-amount {
+    font-size: 1.15rem !important;
+    color: #FFFFFF !important;
+    font-weight: 900 !important;
+  }
+
+  .mobile-simple-bar .btn-lihat-tiket {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    border: 1px solid #FFFFFF !important;
+    font-size: 0.75rem !important;
+    padding: 0.65rem 1.25rem !important;
+    border-radius: 10px !important;
+  }
+
+  .mobile-checkout-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Compact gap */
+    width: 100%;
+    padding: 0 1.5rem;
+  }
+
+  .checkout-bar-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+  }
+
+  .bar-price-stack {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
   }
 
-  .bar-qty {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #999999;
-    text-transform: uppercase;
+  .bar-price-lbl {
+    font-size: 0.55rem !important;
+    font-weight: 800 !important;
+    color: #9CA3AF !important;
+    letter-spacing: 0.05em !important;
   }
 
-  .bar-price {
-    font-size: 1.1rem;
+  .bar-price-val {
+    font-size: 1.15rem !important;
+    font-weight: 900 !important;
+    color: #FFFFFF !important;
+    margin-top: 1px !important;
+    font-family: var(--font-body) !important;
+  }
+
+  .btn-detail-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
     font-weight: 800;
     color: #FFFFFF;
-    margin-top: 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
   }
 
-  .btn-mobile-checkout {
-    background-color: #FFFFFF;
-    color: #000000;
+  .btn-detail-toggle .caret-icon {
+    font-size: 0.6rem;
+    transform: translateY(-1px);
+  }
+
+  .checkout-bar-row-bottom {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+    align-items: center;
+  }
+
+  .btn-beli-sekarang {
+    flex: 1;
+    background-color: #FFFFFF !important; /* White background matching other website buttons */
+    color: #000000 !important;
     border: none;
-    padding: 0.75rem 1.5rem;
+    font-size: 0.85rem;
     font-weight: 800;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    border-radius: 6px;
+    padding: 0.65rem; /* Compact padding */
+    border-radius: 12px;
     cursor: pointer;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .btn-beli-sekarang:hover {
+    background-color: #E5E7EB !important;
+  }
+
+  .btn-beli-sekarang:disabled {
+    background-color: #222222 !important;
+    color: #555555 !important;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-chat-mobile {
+    width: 38px; /* Compact size */
+    height: 38px;
+    background-color: transparent !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .btn-chat-mobile:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: #FFFFFF !important;
+  }
+
+  .chat-icon-svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2.5;
   }
 
   /* Backdrop filter drawer */
@@ -2164,118 +3524,303 @@ const copyLink = () => {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 998;
   }
 
   /* Drawer panel */
   .bottom-sheet-drawer {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    width: 100%;
-    background-color: #141414;
-    border-radius: 16px 16px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    padding: 1.5rem;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.9);
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 100% !important;
+    max-width: 500px !important; /* Perfect centered mobile layout */
+    background-color: #141414 !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    z-index: 999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 1.5rem 1.5rem 6.5rem 1.5rem !important; /* Make room for bottom bar */
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6) !important;
   }
 
   .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 1.25rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding-bottom: 0.75rem !important;
   }
 
   .drawer-title {
-    font-family: var(--font-heading);
-    font-size: 0.9rem;
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    color: #FFFFFF;
-    margin: 0;
+    font-family: var(--font-heading) !important;
+    font-size: 0.95rem !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.05em !important;
+    color: #FFFFFF !important;
+    margin: 0 !important;
   }
 
   .drawer-close-btn {
-    background: none;
-    border: none;
-    color: #999999;
-    font-size: 1.75rem;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0.25rem;
+    background: none !important;
+    border: none !important;
+    color: #9CA3AF !important;
+    font-size: 1.5rem !important;
+    cursor: pointer !important;
+    line-height: 1 !important;
   }
 
   .drawer-body {
-    max-height: 250px;
-    overflow-y: auto;
-    margin-bottom: 1.5rem;
+    max-height: 220px !important;
+    overflow-y: auto !important;
   }
 
-  .drawer-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    border-top: 1px dashed rgba(255, 255, 255, 0.08);
-    padding-top: 1.25rem;
+  .drawer-body .order-summary-box {
+    gap: 1rem !important;
   }
 
-  .drawer-total-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .drawer-body .summary-items-list {
+    gap: 0.6rem !important;
   }
 
-  .drawer-total-row span:first-child {
-    font-size: 0.85rem;
-    color: #999999;
+  .drawer-body .item-name {
+    font-size: 0.75rem !important;
   }
 
-  .drawer-total-price {
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #FFFFFF;
+  .drawer-body .item-qty {
+    font-size: 0.75rem !important;
   }
 
-  .drawer-checkout-btn {
-    width: 100%;
-    background-color: #FFFFFF;
-    color: #000000;
-    border: none;
-    padding: 1rem;
-    font-weight: 800;
-    font-size: 0.8rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-
-  .drawer-checkout-btn:disabled {
-    background-color: #222222;
-    color: #555555;
-    cursor: not-allowed;
+  .drawer-body .item-subtotal {
+    font-size: 0.8rem !important;
   }
 
   /* Transition slide and fade for sheet */
   .fade-enter-active, .fade-leave-active {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease !important;
   }
   .fade-enter-from, .fade-leave-to {
-    opacity: 0;
+    opacity: 0 !important;
   }
 
   .slide-up-enter-active, .slide-up-leave-active {
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
   .slide-up-enter-from, .slide-up-leave-to {
-    transform: translateY(100%);
+    transform: translateX(-50%) translateY(100%) !important;
+  }
+
+  /* Responsive Ticket Cards styling for mobile */
+  .main-ticket-selector {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .ticket-list-stub-wrapper {
+    gap: 1rem;
+  }
+  .ticket-card-mockup {
+    border-radius: 16px !important;
+  }
+  .ticket-card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 1.25rem !important;
+    gap: 0.5rem !important;
+  }
+  .header-left-col {
+    width: 100% !important;
+  }
+  .tier-title-mockup {
+    font-size: 1rem !important;
+    line-height: 1.35 !important;
+  }
+  .tier-status-badge {
+    font-size: 0.6rem !important;
+    padding: 3px 6px !important;
+    margin-top: 0.2rem !important;
+    border-radius: 4px !important;
+  }
+  .header-mid-divider {
+    display: block !important;
+    width: 100% !important;
+    height: 1px !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    margin: 0.4rem 0 !important;
+  }
+  .header-right-col {
+    border-left: none !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+  .header-price-info {
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+  .price-lbl {
+    font-size: 0.65rem !important;
+  }
+  .price-val {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: #FFFFFF !important;
+  }
+  .original-price {
+    font-size: 0.75rem !important;
+  }
+  .discount-tag {
+    font-size: 0.55rem !important;
+  }
+  .chevron-expand-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  .ticket-card-body {
+    padding: 0 1.25rem 1.25rem 1.25rem !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding-top: 1.25rem !important;
+  }
+  .info-section-title {
+    font-size: 0.6rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+  .cal-desc-text, .bullet-item, .ticket-description-para, .benefit-bullet {
+    font-size: 0.75rem !important;
+  }
+  .info-date-row {
+    gap: 0.75rem !important;
+  }
+  .calendar-icon-block {
+    width: 36px !important;
+    height: 40px !important;
+    background-color: #1A1A1A !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .cal-month {
+    font-size: 0.5rem !important;
+    padding: 1.5px 0 !important;
+  }
+  .cal-day {
+    font-size: 0.95rem !important;
+    background-color: #121212 !important;
+  }
+  .info-bullets-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+  }
+  .bullet-item {
+    gap: 0.4rem !important;
+  }
+  .bullet-icon, .benefit-check {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  .benefits-list {
+    gap: 0.4rem !important;
+  }
+  .ticket-card-footer {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto auto !important;
+    grid-template-areas: 
+      ". action"
+      "date total" !important;
+    align-items: end !important;
+    gap: 0.75rem 1rem !important;
+    padding: 1.25rem !important;
+    border-bottom-left-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    background-color: #1E1E1E !important;
+  }
+  .ticket-card-footer::before {
+    left: -13px !important;
+    width: 26px !important;
+    height: 26px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  .ticket-card-footer::after {
+    right: -13px !important;
+    width: 26px !important;
+    height: 26px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  .footer-left-col {
+    grid-area: date !important;
+    align-self: end !important;
+    justify-self: start !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .footer-label {
+    font-size: 0.55rem !important;
+  }
+  .footer-time {
+    font-size: 0.7rem !important;
+    margin-top: 2px !important;
+    color: #FFFFFF !important;
+  }
+  .btn-add-ticket, .btn-sold-out-ticket, .tier-stepper-mockup {
+    grid-area: action !important;
+    justify-self: end !important;
+  }
+  .btn-add-ticket {
+    background-color: #FFFFFF !important; /* White background matching checkout button */
+    color: #000000 !important;
+    border: 1px solid #FFFFFF !important;
+    font-size: 0.75rem !important;
+    padding: 0.5rem 1.25rem !important;
+    border-radius: 8px !important;
+  }
+  .btn-add-ticket:hover {
+    background-color: transparent !important;
+    color: #FFFFFF !important;
+    border-color: #FFFFFF !important;
+  }
+  .btn-sold-out-ticket {
+    font-size: 0.75rem !important;
+    padding: 0.5rem 1.25rem !important;
+    border-radius: 8px !important;
+  }
+  .tier-stepper-mockup {
+    border-radius: 8px !important;
+  }
+  .step-btn-mock {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 1rem !important;
+  }
+  .step-qty-mock {
+    width: 28px !important;
+    font-size: 0.8rem !important;
+  }
+  .footer-total-price-box {
+    grid-area: total !important;
+    justify-self: end !important;
+    margin-top: 0 !important;
+    align-items: flex-end !important;
+    text-align: right !important;
+  }
+  .total-pax-lbl {
+    font-size: 0.55rem !important;
+  }
+  .total-amount-lbl {
+    font-size: 1.15rem !important;
+    margin-top: 2px !important;
+    color: #FFFFFF !important;
   }
 }
 </style>

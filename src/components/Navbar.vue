@@ -800,6 +800,24 @@ onMounted(() => {
     max-width: 100%;
   }
 }
+
+@media (max-width: 767px) {
+  .navbar {
+    height: 65px !important;
+  }
+  .logo-img {
+    height: 44px !important;
+  }
+  .cart-btn {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .cart-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
 .nav-item.active-link {
   color: var(--text-primary) !important;
 }
