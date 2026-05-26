@@ -323,7 +323,7 @@ const goBack = () => {
 
 // Accordion Expand/Collapse States
 const isBuyerExpanded = ref(true)
-const isTicketHolderExpanded = ref(true)
+const ticketHolderExpanded = ref([])
 
 // Buyer Information Form Data
 const buyerForm = reactive({
@@ -333,40 +333,78 @@ const buyerForm = reactive({
   countryCode: '+62'
 })
 
-// Ticket Holder Information Form Data
-const ticketHolderForm = reactive({
-  fullName: '',
-  email: '',
-  phone: '',
-  countryCode: '+62'
+// Compute flat list of all ticket holder slots (1 slot per ticket qty)
+const ticketHolderSlots = computed(() => {
+  const slots = []
+  const tickets = checkoutData.value?.tickets || []
+  tickets.forEach(ticket => {
+    for (let i = 0; i < ticket.qty; i++) {
+      slots.push({
+        ticketId: ticket.id,
+        ticketName: ticket.name,
+        ticketPrice: ticket.price,
+        slotIndex: slots.length
+      })
+    }
+  })
+  return slots
 })
 
-// Gunakan Data Pemesan (Use Buyer Data) Toggle
-const useBuyerData = ref(false)
+// Ticket Holder Forms - array of per-ticket holder data
+const ticketHolderForms = ref([])
 
-// Watch buyerForm and automatically sync to ticketHolderForm if toggle is active
+// Initialize holder forms whenever ticketHolderSlots changes
+watch(ticketHolderSlots, (newSlots) => {
+  // Preserve existing data if slots count didn't change drastically
+  const newForms = newSlots.map((slot, i) => {
+    const existing = ticketHolderForms.value[i]
+    return existing || {
+      fullName: '',
+      email: '',
+      phone: '',
+      countryCode: '+62',
+      useBuyerData: false,
+      showCountryDropdown: false
+    }
+  })
+  ticketHolderForms.value = newForms
+  // Initialize expanded states
+  ticketHolderExpanded.value = newSlots.map((_, i) => i === 0)
+}, { immediate: true })
+
+// Watch buyer form changes and sync to all holders that have useBuyerData enabled
 watch(
   () => ({ ...buyerForm }),
   (newVal) => {
-    if (useBuyerData.value) {
-      ticketHolderForm.fullName = newVal.fullName
-      ticketHolderForm.email = newVal.email
-      ticketHolderForm.phone = newVal.phone
-      ticketHolderForm.countryCode = newVal.countryCode
-    }
+    ticketHolderForms.value.forEach(form => {
+      if (form.useBuyerData) {
+        form.fullName = newVal.fullName
+        form.email = newVal.email
+        form.phone = newVal.phone
+        form.countryCode = newVal.countryCode
+      }
+    })
   },
   { deep: true }
 )
 
-// Watch the toggle itself
-watch(useBuyerData, (newVal) => {
-  if (newVal) {
-    ticketHolderForm.fullName = buyerForm.fullName
-    ticketHolderForm.email = buyerForm.email
-    ticketHolderForm.phone = buyerForm.phone
-    ticketHolderForm.countryCode = buyerForm.countryCode
+// Sync buyer data to a specific holder
+const syncBuyerDataToHolder = (holderIndex) => {
+  const form = ticketHolderForms.value[holderIndex]
+  if (form && form.useBuyerData) {
+    form.fullName = buyerForm.fullName
+    form.email = buyerForm.email
+    form.phone = buyerForm.phone
+    form.countryCode = buyerForm.countryCode
   }
-})
+}
+
+const selectHolderCountry = (holderIndex, code) => {
+  if (ticketHolderForms.value[holderIndex]) {
+    ticketHolderForms.value[holderIndex].countryCode = code
+    ticketHolderForms.value[holderIndex].showCountryDropdown = false
+  }
+}
 
 // Agreement Checkboxes
 const isDataAccurate = ref(false)
@@ -377,15 +415,12 @@ const errors = reactive({
   buyerName: '',
   buyerEmail: '',
   buyerPhone: '',
-  holderName: '',
-  holderEmail: '',
-  holderPhone: '',
+  holderErrors: [], // per-slot errors
   dataAccurate: ''
 })
 
 // Country code dropdowns toggle
 const showBuyerCountryDropdown = ref(false)
-const showHolderCountryDropdown = ref(false)
 
 const countryCodes = [
   { code: '+62', name: 'Indonesia', flag: '🇮🇩' },
@@ -398,11 +433,6 @@ const countryCodes = [
 const selectBuyerCountry = (code) => {
   buyerForm.countryCode = code
   showBuyerCountryDropdown.value = false
-}
-
-const selectHolderCountry = (code) => {
-  ticketHolderForm.countryCode = code
-  showHolderCountryDropdown.value = false
 }
 
 // Countdown Timer State (starts at 15 minutes / 900 seconds)
@@ -478,7 +508,9 @@ onUnmounted(() => {
 const handleOutsideClick = (e) => {
   if (!e.target.closest('.country-dropdown-wrapper')) {
     showBuyerCountryDropdown.value = false
-    showHolderCountryDropdown.value = false
+    ticketHolderForms.value.forEach(form => {
+      form.showCountryDropdown = false
+    })
   }
 }
 
@@ -488,15 +520,27 @@ const isValidEmail = (email) => {
   return re.test(email)
 }
 
+// Strip leading zero from phone if country code is +62 (real-time)
+const handleBuyerPhoneInput = () => {
+  if (buyerForm.countryCode === '+62' && buyerForm.phone.startsWith('0')) {
+    buyerForm.phone = buyerForm.phone.replace(/^0+/, '')
+  }
+}
+
+const handleHolderPhoneInput = (idx) => {
+  const form = ticketHolderForms.value[idx]
+  if (form && form.countryCode === '+62' && form.phone.startsWith('0')) {
+    form.phone = form.phone.replace(/^0+/, '')
+  }
+}
+
 // Submit checkout
 const handleCheckout = () => {
   // Reset errors
   errors.buyerName = ''
   errors.buyerEmail = ''
   errors.buyerPhone = ''
-  errors.holderName = ''
-  errors.holderEmail = ''
-  errors.holderPhone = ''
+  errors.holderErrors = ticketHolderSlots.value.map(() => ({ name: '', email: '', phone: '' }))
   errors.dataAccurate = ''
 
   let hasError = false
@@ -519,27 +563,35 @@ const handleCheckout = () => {
   } else if (!/^\d{8,14}$/.test(buyerForm.phone.trim())) {
     errors.buyerPhone = currentLang.value === 'id' ? 'Nomor telepon harus berupa 8-14 digit angka' : 'Phone number must be 8-14 digits'
     hasError = true
+  } else if (buyerForm.countryCode === '+62' && buyerForm.phone.trim().startsWith('0')) {
+    errors.buyerPhone = currentLang.value === 'id' ? 'Nomor telepon dengan +62 tidak boleh diawali angka 0' : 'Phone number with +62 must not start with 0'
+    hasError = true
   }
 
-  // Validate Ticket Holder (if not synced or even if synced, double check values)
-  if (!ticketHolderForm.fullName.trim()) {
-    errors.holderName = currentLang.value === 'id' ? 'Nama pemilik tiket wajib diisi' : 'Ticket holder name is required'
-    hasError = true
-  }
-  if (!ticketHolderForm.email.trim()) {
-    errors.holderEmail = currentLang.value === 'id' ? 'Email pemilik tiket wajib diisi' : 'Ticket holder email is required'
-    hasError = true
-  } else if (!isValidEmail(ticketHolderForm.email)) {
-    errors.holderEmail = currentLang.value === 'id' ? 'Format email tidak valid' : 'Invalid email format'
-    hasError = true
-  }
-  if (!ticketHolderForm.phone.trim()) {
-    errors.holderPhone = currentLang.value === 'id' ? 'Nomor telepon pemilik tiket wajib diisi' : 'Ticket holder phone is required'
-    hasError = true
-  } else if (!/^\d{8,14}$/.test(ticketHolderForm.phone.trim())) {
-    errors.holderPhone = currentLang.value === 'id' ? 'Nomor telepon harus berupa 8-14 digit angka' : 'Phone number must be 8-14 digits'
-    hasError = true
-  }
+  // Validate each Ticket Holder
+  ticketHolderForms.value.forEach((form, i) => {
+    if (!form.fullName.trim()) {
+      errors.holderErrors[i].name = currentLang.value === 'id' ? 'Nama pemilik tiket wajib diisi' : 'Ticket holder name is required'
+      hasError = true
+    }
+    if (!form.email.trim()) {
+      errors.holderErrors[i].email = currentLang.value === 'id' ? 'Email pemilik tiket wajib diisi' : 'Ticket holder email is required'
+      hasError = true
+    } else if (!isValidEmail(form.email)) {
+      errors.holderErrors[i].email = currentLang.value === 'id' ? 'Format email tidak valid' : 'Invalid email format'
+      hasError = true
+    }
+    if (!form.phone.trim()) {
+      errors.holderErrors[i].phone = currentLang.value === 'id' ? 'Nomor telepon pemilik tiket wajib diisi' : 'Ticket holder phone is required'
+      hasError = true
+    } else if (!/^\d{8,14}$/.test(form.phone.trim())) {
+      errors.holderErrors[i].phone = currentLang.value === 'id' ? 'Nomor telepon harus berupa 8-14 digit angka' : 'Phone number must be 8-14 digits'
+      hasError = true
+    } else if (form.countryCode === '+62' && form.phone.trim().startsWith('0')) {
+      errors.holderErrors[i].phone = currentLang.value === 'id' ? 'Nomor telepon dengan +62 tidak boleh diawali angka 0' : 'Phone number with +62 must not start with 0'
+      hasError = true
+    }
+  })
 
   // Validate Checkboxes
   if (!isDataAccurate.value) {
@@ -712,6 +764,7 @@ const isMobileSummaryExpanded = ref(false)
                         v-model="buyerForm.phone" 
                         placeholder="Contoh: 81234567890" 
                         class="checkout-phone-input" 
+                        @input="handleBuyerPhoneInput"
                       />
                     </div>
                     <span v-if="errors.buyerPhone" class="error-message">{{ errors.buyerPhone }}</span>
@@ -722,89 +775,98 @@ const isMobileSummaryExpanded = ref(false)
             </transition>
           </div>
 
-          <!-- Card 2: Tiket Details (Ticket Holder Information) -->
-          <div class="accordion-card" :class="{ 'is-expanded': isTicketHolderExpanded }">
-            <div class="accordion-header" @click="isTicketHolderExpanded = !isTicketHolderExpanded">
+          <!-- Dynamic Ticket Holder Cards (one per ticket slot) -->
+          <div
+            v-for="(slot, slotIdx) in ticketHolderSlots"
+            :key="`holder-${slotIdx}`"
+            class="accordion-card"
+            :class="{ 'is-expanded': ticketHolderExpanded[slotIdx] }"
+          >
+            <div class="accordion-header" @click="ticketHolderExpanded[slotIdx] = !ticketHolderExpanded[slotIdx]">
               <div class="header-left-title-box">
                 <!-- Ticket Icon -->
                 <svg class="accordion-ticket-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 8.5C21 8.22 20.78 8 20.5 8C19.12 8 18 6.88 18 5.5C18 5.22 17.78 5 17.5 5H6.5C6.22 5 6 5.22 6 5.5C6 6.88 4.88 8 3.5 8C3.22 8 3 8.22 3 8.5V15.5C3 15.78 3.22 16 3.5 16C4.88 16 6 17.12 6 18.5C6 18.78 6.22 19 6.5 19H17.5C17.78 19 18 18.78 18 18.5C18 17.12 19.12 16 20.5 16C20.78 16 21 15.78 21 15.5V8.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <div class="ticket-header-text-block">
-                  <span class="accordion-card-title secondary">1. Pemilik Tiket {{ checkoutData?.tickets?.[0]?.name || 'GELOMBANG AWAL OTW NORMAL' }}</span>
-                  <span class="accordion-card-subtitle">1 Tiket x Rp {{ formatPrice(checkoutData?.tickets?.[0]?.price || 150000) }}</span>
+                  <span class="accordion-card-title secondary">{{ slotIdx + 1 }}. Pemilik Tiket {{ slot.ticketName }}</span>
+                  <span class="accordion-card-subtitle">1 Tiket x Rp {{ formatPrice(slot.ticketPrice) }}</span>
                 </div>
               </div>
-              <svg class="chevron-accordion-icon" :class="{ rotated: isTicketHolderExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="chevron-accordion-icon" :class="{ rotated: ticketHolderExpanded[slotIdx] }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="18 15 12 9 6 15"></polyline>
               </svg>
             </div>
 
             <transition name="accordion-slide">
-              <div v-show="isTicketHolderExpanded" class="accordion-body">
+              <div v-show="ticketHolderExpanded[slotIdx]" class="accordion-body">
                 
                 <!-- Toggle Gunakan Data Pemesan -->
                 <div class="toggle-switch-wrapper">
                   <span class="toggle-label-text">Gunakan Data Pemesan</span>
                   <label class="switch-control">
-                    <input type="checkbox" v-model="useBuyerData" />
+                    <input 
+                      type="checkbox" 
+                      v-model="ticketHolderForms[slotIdx].useBuyerData"
+                      @change="syncBuyerDataToHolder(slotIdx)"
+                    />
                     <span class="switch-slider round"></span>
                   </label>
                 </div>
 
-                <div class="form-fields-wrapper mt-3" :class="{ 'is-disabled-overlay': useBuyerData }">
+                <div class="form-fields-wrapper mt-3" :class="{ 'is-disabled-overlay': ticketHolderForms[slotIdx]?.useBuyerData }">
                   <!-- Disabled overlay if syncing with buyer -->
-                  <div v-if="useBuyerData" class="fields-disabled-mask" @click.stop="useBuyerData = false"></div>
+                  <div v-if="ticketHolderForms[slotIdx]?.useBuyerData" class="fields-disabled-mask" @click.stop="ticketHolderForms[slotIdx].useBuyerData = false"></div>
                   
                   <!-- Full Name Input -->
-                  <div class="form-group" :class="{ 'has-error': errors.holderName }">
-                    <label class="form-field-label">{{ currentLang === 'id' ? 'Nama Lengkap' : 'Nama Lengkap' }}</label>
+                  <div class="form-group" :class="{ 'has-error': errors.holderErrors?.[slotIdx]?.name }">
+                    <label class="form-field-label">Nama Lengkap</label>
                     <input 
                       type="text" 
-                      v-model="ticketHolderForm.fullName" 
+                      v-model="ticketHolderForms[slotIdx].fullName" 
                       placeholder="Nama Lengkap" 
                       class="checkout-text-input" 
-                      :disabled="useBuyerData"
+                      :disabled="ticketHolderForms[slotIdx]?.useBuyerData"
                     />
-                    <span v-if="errors.holderName" class="error-message">{{ errors.holderName }}</span>
+                    <span v-if="errors.holderErrors?.[slotIdx]?.name" class="error-message">{{ errors.holderErrors[slotIdx].name }}</span>
                   </div>
 
                   <!-- Email Input -->
-                  <div class="form-group" :class="{ 'has-error': errors.holderEmail }">
+                  <div class="form-group" :class="{ 'has-error': errors.holderErrors?.[slotIdx]?.email }">
                     <label class="form-field-label">Email</label>
                     <input 
                       type="email" 
-                      v-model="ticketHolderForm.email" 
+                      v-model="ticketHolderForms[slotIdx].email" 
                       placeholder="Contoh: example@example.com" 
                       class="checkout-text-input" 
-                      :disabled="useBuyerData"
+                      :disabled="ticketHolderForms[slotIdx]?.useBuyerData"
                     />
-                    <span v-if="errors.holderEmail" class="error-message">{{ errors.holderEmail }}</span>
+                    <span v-if="errors.holderErrors?.[slotIdx]?.email" class="error-message">{{ errors.holderErrors[slotIdx].email }}</span>
                   </div>
 
                   <!-- Phone Number Input with Prefix Dropdown -->
-                  <div class="form-group" :class="{ 'has-error': errors.holderPhone }">
-                    <label class="form-field-label">{{ currentLang === 'id' ? 'No Telepon' : 'No Telepon' }}</label>
+                  <div class="form-group" :class="{ 'has-error': errors.holderErrors?.[slotIdx]?.phone }">
+                    <label class="form-field-label">No Telepon</label>
                     <div class="phone-input-group">
                       <!-- Dropdown prefix -->
-                      <div class="country-dropdown-wrapper" id="holder-country-drop">
+                      <div class="country-dropdown-wrapper">
                         <button 
                           class="btn-prefix-dropdown" 
-                          @click.stop="!useBuyerData ? showHolderCountryDropdown = !showHolderCountryDropdown : null"
-                          :disabled="useBuyerData"
+                          @click.stop="ticketHolderForms[slotIdx].useBuyerData ? null : (ticketHolderForms[slotIdx].showCountryDropdown = !ticketHolderForms[slotIdx].showCountryDropdown)"
+                          :disabled="ticketHolderForms[slotIdx]?.useBuyerData"
                         >
-                          <span>{{ ticketHolderForm.countryCode }}</span>
+                          <span>{{ ticketHolderForms[slotIdx]?.countryCode || '+62' }}</span>
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="chevron-down-mini">
                             <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                           </svg>
                         </button>
                         
-                        <div v-if="showHolderCountryDropdown" class="dropdown-list-container">
+                        <div v-if="ticketHolderForms[slotIdx]?.showCountryDropdown" class="dropdown-list-container">
                           <button 
                             v-for="country in countryCodes" 
                             :key="country.code" 
                             class="dropdown-item-btn"
-                            @click="selectHolderCountry(country.code)"
+                            @click="selectHolderCountry(slotIdx, country.code)"
                           >
                             <span class="dropdown-flag">{{ country.flag }}</span>
                             <span class="dropdown-name">{{ country.name }}</span>
@@ -816,13 +878,14 @@ const isMobileSummaryExpanded = ref(false)
                       <!-- Input field -->
                       <input 
                         type="tel" 
-                        v-model="ticketHolderForm.phone" 
+                        v-model="ticketHolderForms[slotIdx].phone" 
                         placeholder="Contoh: 81234567890" 
                         class="checkout-phone-input" 
-                        :disabled="useBuyerData"
+                        :disabled="ticketHolderForms[slotIdx]?.useBuyerData"
+                        @input="handleHolderPhoneInput(slotIdx)"
                       />
                     </div>
-                    <span v-if="errors.holderPhone" class="error-message">{{ errors.holderPhone }}</span>
+                    <span v-if="errors.holderErrors?.[slotIdx]?.phone" class="error-message">{{ errors.holderErrors[slotIdx].phone }}</span>
                   </div>
 
                 </div>
@@ -1019,16 +1082,16 @@ const isMobileSummaryExpanded = ref(false)
 .transaction-checkout-page {
   background-color: #0e0e0e; /* Matches Website Primary Dark Background */
   min-height: 100vh;
-  padding: 6.5rem 0 11rem 0; /* extra space at bottom for sticky bar */
+  padding: 7rem 0 11rem 0; /* top: 90px navbar height + 1rem spacing */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #ffffff; /* Matches Website Text Primary (White) */
   text-align: left;
 }
 
 .checkout-container {
-  max-width: 1200px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
 }
 
 /* Back Link Row */
@@ -1087,7 +1150,7 @@ const isMobileSummaryExpanded = ref(false)
   border: 1px solid rgba(255, 255, 255, 0.08); /* Matches Website Border Color */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   margin-bottom: 1.25rem;
-  overflow: hidden;
+  overflow: visible; /* Allow country dropdown to overflow the card */
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1156,15 +1219,16 @@ const isMobileSummaryExpanded = ref(false)
 /* Accordion body sliding animation */
 .accordion-slide-enter-active,
 .accordion-slide-leave-active {
-  transition: max-height 0.3s ease-in-out, opacity 0.3s ease;
-  max-height: 500px;
-  overflow: hidden;
+  transition: max-height 0.35s ease-in-out, opacity 0.3s ease;
+  max-height: 2000px; /* Large enough to fit all form fields + dropdown */
+  overflow: visible;
 }
 
 .accordion-slide-enter-from,
 .accordion-slide-leave-to {
-  max-height: 0;
+  max-height: 0 !important;
   opacity: 0;
+  overflow: hidden;
 }
 
 .accordion-body {
@@ -1238,15 +1302,19 @@ const isMobileSummaryExpanded = ref(false)
 .phone-input-group {
   display: flex;
   gap: 0.5rem;
+  align-items: stretch;
   position: relative;
+  width: 100%;
 }
 
 .country-dropdown-wrapper {
   position: relative;
+  flex-shrink: 0;
 }
 
 .btn-prefix-dropdown {
-  height: 100%;
+  min-height: 46px;
+  min-width: 72px;
   padding: 0 0.75rem;
   background-color: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1256,10 +1324,12 @@ const isMobileSummaryExpanded = ref(false)
   font-size: 0.95rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
   cursor: pointer;
   outline: none;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-prefix-dropdown:hover {
@@ -1278,15 +1348,15 @@ const isMobileSummaryExpanded = ref(false)
 
 .dropdown-list-container {
   position: absolute;
-  top: 105%;
+  top: calc(100% + 6px);
   left: 0;
-  z-index: 100;
+  z-index: 9999;
   background-color: #181818;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
   width: 220px;
-  max-height: 250px;
+  max-height: 240px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1783,12 +1853,13 @@ input:checked + .switch-slider:before {
 }
 
 .bottom-action-bar-container {
-  max-width: 1200px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 /* Left Countdown Timer Widget */
@@ -2009,7 +2080,7 @@ input:checked + .switch-slider:before {
 
 @media (max-width: 600px) {
   .transaction-checkout-page {
-    padding-top: 5rem;
+    padding-top: 6.5rem; /* still needs navbar clearance on mobile */
     padding-bottom: 12rem; /* even more space for taller bottom bar */
   }
 
@@ -2019,18 +2090,55 @@ input:checked + .switch-slider:before {
   }
 
   .bottom-action-bar-container {
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
-    align-items: stretch;
-  }
-
-  .bottom-bar-left-timer-info {
-    justify-content: center;
+    align-items: center;
   }
 
   .btn-beli-tiket-checkout {
-    width: 100%;
     padding: 0.85rem 1.5rem;
+    white-space: nowrap;
+  }
+
+  /* Phone input mobile adjustments */
+  .phone-input-group {
+    flex-wrap: nowrap;
+  }
+
+  .btn-prefix-dropdown {
+    min-width: 64px;
+    font-size: 0.85rem;
+    padding: 0 0.5rem;
+  }
+
+  .chevron-down-mini {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Dropdown on mobile: use full card width, not fixed 220px */
+  .dropdown-list-container {
+    width: 200px;
+    max-height: 200px;
+    font-size: 0.8rem;
+  }
+
+  .dropdown-item-btn {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* Accordion body padding tighter on mobile */
+  .accordion-body {
+    padding: 1rem;
+  }
+
+  .accordion-header {
+    padding: 1rem;
+  }
+
+  .accordion-card-title.secondary {
+    font-size: 0.85rem;
   }
 }
 </style>

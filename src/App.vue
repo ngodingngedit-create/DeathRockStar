@@ -48,7 +48,7 @@ onMounted(() => {
     <div class="noise-overlay"></div>
 
     <!-- Header / Navbar -->
-    <Navbar v-if="currentRoute !== '#transaction-event'" />
+    <Navbar />
 
     <!-- Main Page Sections -->
     <main>

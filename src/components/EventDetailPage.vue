@@ -2171,7 +2171,7 @@ const toggleTicketTier = (tier) => {
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-  left: 180px;
+  left: 255px;
 }
 
 .btn-edit-summary:hover {
