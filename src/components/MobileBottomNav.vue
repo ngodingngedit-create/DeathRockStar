@@ -44,9 +44,9 @@ const handleTabClick = (href) => {
 }
 
 const searchEvents = [
-  { id: 1, title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
-  { id: 2, title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
-  { id: 3, title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
+  { id: 1, slug: 'noise-parade-2026', title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
+  { id: 2, slug: 'south-side-fest', title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
+  { id: 3, slug: 'undercity-gigs', title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
 ]
 
 const searchProducts = [
@@ -227,7 +227,7 @@ onMounted(() => {
               <a
                 v-for="event in filteredSearchEvents"
                 :key="event.id"
-                :href="'#event-detail-' + event.id"
+                :href="'#event-detail-' + event.slug"
                 class="msearch-card"
                 @click="isSearchOpen = false"
               >

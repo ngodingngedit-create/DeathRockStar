@@ -307,10 +307,43 @@ const loadCheckoutData = () => {
 }
 
 // Compute active event details dynamically
+const fetchedEvent = ref(null)
+
 const activeEvent = computed(() => {
-  const id = checkoutData.value ? checkoutData.value.eventId : 1
-  return events.find(e => e.id === id) || events[0]
+  return fetchedEvent.value || events.find(e => e.id === (checkoutData.value ? checkoutData.value.eventId : 1)) || events[0]
 })
+
+const fetchEventData = async (slug) => {
+  if (!slug || typeof slug !== 'string') return;
+  try {
+    const isProd = import.meta.env.PROD || window.location.hostname.includes('api.kolektix.com');
+    const baseUrl = isProd ? 'https://api.kolektix.com' : 'https://api.kolektix.my.id';
+    
+    const res = await fetch(`${baseUrl}/api/event/${slug}`);
+    const resData = await res.json();
+    
+    if (resData && resData.data) {
+      const item = resData.data;
+      fetchedEvent.value = {
+        id: item.id,
+        slug: item.slug,
+        title: item.name,
+        date: item.start_date,
+        venue: `${item.location_name}, ${item.location_city}`,
+        address: item.location_address,
+        image: item.image_base64 || item.image_url || item.image || noiseImg,
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch event:', err);
+  }
+}
+
+watch(() => checkoutData.value?.eventId, (newVal) => {
+  if (typeof newVal === 'string') {
+    fetchEventData(newVal)
+  }
+}, { immediate: true })
 
 const formatPrice = (price) => {
   return price.toLocaleString('id-ID')
@@ -318,7 +351,7 @@ const formatPrice = (price) => {
 
 // Navigation trigger to go back or home
 const goBack = () => {
-  window.location.hash = `#event-detail-${activeEvent.value.id}`
+  window.location.hash = `#event-detail-${activeEvent.value.slug || activeEvent.value.id}`
 }
 
 // Accordion Expand/Collapse States

@@ -42,7 +42,12 @@ export const setCartItemQuantity = (product, size = '', color = '', quantity = 0
         priceNum: parseInt(product.price.replace(/[^\d]/g, '')),
         image: product.image,
         category: product.category,
-        quantity: quantity
+        quantity: quantity,
+        slug: product.slug,
+        admin_fee: product.admin_fee || 0,
+        weight: product.weight || 0,
+        variant_id: product.variant_id,
+        product_id: product.product_id || product.id
       })
     }
   }
@@ -64,7 +69,12 @@ export const addItem = (product, size = '', color = '', quantity = 1) => {
       priceNum: parseInt(product.price.replace(/[^\d]/g, '')),
       image: product.image,
       category: product.category,
-      quantity: quantity
+      quantity: quantity,
+      slug: product.slug,
+      admin_fee: product.admin_fee || 0,
+      weight: product.weight || 0,
+      variant_id: product.variant_id,
+      product_id: product.product_id || product.id
     })
   }
 }

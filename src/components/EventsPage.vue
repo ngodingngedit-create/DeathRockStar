@@ -1,255 +1,64 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
 
-// Import local image assets
-import noiseImg from '../assets/images/event_noise_parade.png'
-import southSideImg from '../assets/images/event_south_side.png'
-import undercityImg from '../assets/images/event_undercity.png'
+// Initial events list (will be populated from API)
+const events = ref([])
 
-// Initial events list (16 events for rich interaction)
-const events = ref([
-  {
-    id: 1,
-    title: 'NOISE PARADE 2026',
-    date: '2026-06-15',
-    day: '15',
-    month: 'JUN',
-    year: '2026',
-    location: 'Jakarta Pusat',
-    venue: 'Live House, Jakarta',
-    time: '19:00 - 23:00 WIB',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 150000,
-    isFavorite: false
-  },
-  {
-    id: 2,
-    title: 'SOUTH SIDE FEST',
-    date: '2026-06-29',
-    day: '29',
-    month: 'JUN',
-    year: '2026',
-    location: 'Jakarta Selatan',
-    venue: 'Parkir Timur Senayan, Jakarta',
-    time: '15:00 - 22:00 WIB',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 250000,
-    isFavorite: false
-  },
-  {
-    id: 3,
-    title: 'UNDERCITY GIGS',
-    date: '2026-07-12',
-    day: '12',
-    month: 'JUL',
-    year: '2026',
-    location: 'Bandung',
-    venue: 'Ruang Bawah Tanah, Bandung',
-    time: '19:00 - 23:00 WIB',
-    image: undercityImg,
-    category: 'UNDERGROUND',
-    price: 120000,
-    isFavorite: false
-  },
-  {
-    id: 4,
-    title: 'METALCORE MANIA',
-    date: '2026-08-05',
-    day: '05',
-    month: 'AGU',
-    year: '2026',
-    location: 'Jakarta Barat',
-    venue: 'Tennis Indoor Senayan, Jakarta',
-    time: '18:00 - 22:00 WIB',
-    image: noiseImg,
-    category: 'CONCERT',
-    price: 180000,
-    isFavorite: false
-  },
-  {
-    id: 5,
-    title: 'INDIE POP GIGS',
-    date: '2026-05-10',
-    day: '10',
-    month: 'MEI',
-    year: '2026',
-    location: 'Yogyakarta',
-    venue: 'Rossi Musik, Jakarta',
-    time: '20:00 - 23:00 WIB',
-    image: southSideImg,
-    category: 'LIVE HOUSE',
-    price: 90000,
-    isFavorite: false
-  },
-  {
-    id: 6,
-    title: 'RETRO SOUNDS 2026',
-    date: '2026-04-20',
-    day: '20',
-    month: 'APR',
-    year: '2026',
-    location: 'Surabaya',
-    venue: 'Gambir Expo Kemayoran, Jakarta',
-    time: '14:00 - 23:00 WIB',
-    image: undercityImg,
-    category: 'FESTIVAL',
-    price: 200000,
-    isFavorite: false
-  },
-  {
-    id: 7,
-    title: 'JAZZ IN THE GARDEN',
-    date: '2026-03-15',
-    day: '15',
-    month: 'MAR',
-    year: '2026',
-    location: 'Bogor',
-    venue: 'Kebun Raya Bogor, Bogor',
-    time: '16:00 - 20:00 WIB',
-    image: noiseImg,
-    category: 'CONCERT',
-    price: 160000,
-    isFavorite: false
-  },
-  {
-    id: 8,
-    title: 'HARDCORE SUMMER',
-    date: '2026-02-28',
-    day: '28',
-    month: 'PEB',
-    year: '2026',
-    location: 'Denpasar',
-    venue: 'Rossi Musik, Jakarta',
-    time: '17:00 - 22:00 WIB',
-    image: southSideImg,
-    category: 'UNDERGROUND',
-    price: 100000,
-    isFavorite: false
-  },
-  {
-    id: 9,
-    title: 'PUNK ROCK ATTACK',
-    date: '2026-07-20',
-    day: '20',
-    month: 'JUL',
-    year: '2026',
-    location: 'Tangerang',
-    venue: 'Indoor Arena, Tangerang',
-    time: '18:00 - 22:00 WIB',
-    image: undercityImg,
-    category: 'UNDERGROUND',
-    price: 110000,
-    isFavorite: false
-  },
-  {
-    id: 10,
-    title: 'FOLK ACADEMY 2026',
-    date: '2026-08-15',
-    day: '15',
-    month: 'AGU',
-    year: '2026',
-    location: 'Malang',
-    venue: 'Amphitheater, Malang',
-    time: '19:00 - 22:00 WIB',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 130000,
-    isFavorite: false
-  },
-  {
-    id: 11,
-    title: 'HIP HOP SUMMIT',
-    date: '2026-09-02',
-    day: '02',
-    month: 'SEP',
-    year: '2026',
-    location: 'Jakarta Utara',
-    venue: 'Pantai Indah Kapuk, Jakarta',
-    time: '16:00 - 23:00 WIB',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 220000,
-    isFavorite: false
-  },
-  {
-    id: 12,
-    title: 'ECHOES OF THE EAST',
-    date: '2026-09-18',
-    day: '18',
-    month: 'SEP',
-    year: '2026',
-    location: 'Makassar',
-    venue: 'Fort Rotterdam, Makassar',
-    time: '17:00 - 22:00 WIB',
-    image: undercityImg,
-    category: 'CONCERT',
-    price: 175000,
-    isFavorite: false
-  },
-  {
-    id: 13,
-    title: 'SYNTHWAVE NIGHT',
-    date: '2026-05-05',
-    day: '05',
-    month: 'MEI',
-    year: '2026',
-    location: 'Semarang',
-    venue: 'Old Town Hall, Semarang',
-    time: '20:00 - 23:00 WIB',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 95000,
-    isFavorite: false
-  },
-  {
-    id: 14,
-    title: 'SUMMER BLAST 2026',
-    date: '2026-04-12',
-    day: '12',
-    month: 'APR',
-    year: '2026',
-    location: 'Medan',
-    venue: 'Lapangan Benteng, Medan',
-    time: '14:00 - 22:00 WIB',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 210000,
-    isFavorite: false
-  },
-  {
-    id: 15,
-    title: 'ACOUSTIC SESSION',
-    date: '2026-03-25',
-    day: '25',
-    month: 'MAR',
-    year: '2026',
-    location: 'Solo',
-    venue: 'Taman Balekambang, Solo',
-    time: '19:30 - 21:30 WIB',
-    image: undercityImg,
-    category: 'CONCERT',
-    price: 80000,
-    isFavorite: false
-  },
-  {
-    id: 16,
-    title: 'POST-ROCK VISIONS',
-    date: '2026-02-10',
-    day: '10',
-    month: 'PEB',
-    year: '2026',
-    location: 'Bandung',
-    venue: 'Dago Tea House, Bandung',
-    time: '19:00 - 23:00 WIB',
-    image: noiseImg,
-    category: 'UNDERGROUND',
-    price: 115000,
-    isFavorite: false
+onMounted(async () => {
+  try {
+    const isProd = import.meta.env.PROD || window.location.hostname.includes('api.kolektix.com');
+    const baseUrl = isProd ? 'https://api.kolektix.com' : 'https://api.kolektix.my.id';
+    const creatorId = isProd ? 146 : 11;
+    
+    const res = await fetch(`${baseUrl}/api/event-by-creator/${creatorId}`);
+    const resData = await res.json();
+    
+    if (resData && resData.data && Array.isArray(resData.data)) {
+      events.value = resData.data.map(item => {
+        const dateObj = new Date(item.start_date || new Date());
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const monthMap = {
+          '01': 'JAN', '02': 'PEB', '03': 'MAR', '04': 'APR', '05': 'MEI', '06': 'JUN',
+          '07': 'JUL', '08': 'AGU', '09': 'SEP', '10': 'OKT', '11': 'NOV', '12': 'DES'
+        };
+        const monthKey = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const month = monthMap[monthKey] || 'JAN';
+        const year = dateObj.getFullYear().toString();
+        
+        let price = item.starting_price || 0;
+        if (item.has_event_ticket && item.has_event_ticket.length > 0) {
+          // find minimum price if there are multiple tickets, else just use the first
+          const validTickets = item.has_event_ticket.filter(t => t.price > 0);
+          if (validTickets.length > 0) {
+             price = Math.min(...validTickets.map(t => t.price));
+          } else {
+             price = item.has_event_ticket[0].price;
+          }
+        }
+        
+        return {
+          id: item.id,
+          slug: item.slug,
+          title: item.name,
+          date: item.start_date,
+          day: day,
+          month: month,
+          year: year,
+          location: item.location_city || item.location_name || 'Lokasi tidak diketahui',
+          venue: `${item.location_name}, ${item.location_city}`,
+          time: `${item.start_time ? item.start_time.substring(0, 5) : '00:00'} - ${item.end_time ? item.end_time.substring(0, 5) : '00:00'} ${item.zone_time || 'WIB'}`,
+          image: item.image_url,
+          category: item.has_event_format?.name?.toUpperCase() || 'EVENT',
+          price: price,
+          isFavorite: false
+        };
+      });
+    }
+  } catch (error) {
+    console.error('Failed to fetch events:', error);
   }
-])
+});
 
 // Interactive state filters & search
 const activeCategoryTab = ref('ALL EVENTS') // 'ALL EVENTS', 'UPCOMING', 'PAST EVENTS'
@@ -307,8 +116,8 @@ const changeTab = (tab) => {
   isExpanded.value = false
 }
 
-const navigateToDetail = (id) => {
-  window.location.hash = `#event-detail-${id}`
+const navigateToDetail = (slug) => {
+  window.location.hash = `#event-detail-${slug}`
 }
 
 const translateLocation = (loc) => {
@@ -492,27 +301,18 @@ const translateMonth = (m) => {
                 <span class="price-lbl">{{ t('mulaiDari') }}</span>
                 <span class="price-val">Rp {{ formatPrice(event.price) }}</span>
               </div>
-              <!-- Active Upcoming Ticket Link -->
+              <!-- Active Ticket Link (Both Upcoming & Past) -->
               <a 
-                v-if="event.date >= BENCHMARK_DATE" 
-                :href="'#event-detail-' + event.id" 
+                :href="'#event-detail-' + event.slug" 
                 class="pilih-tiket-btn"
-                @click.prevent="navigateToDetail(event.id)"
+                :class="{ 'past-event-btn': event.date < BENCHMARK_DATE }"
+                @click.prevent="navigateToDetail(event.slug)"
               >
                 <span>{{ activeCategoryTab === 'UPCOMING' ? t('upcoming') : t('lihatTiket') }}</span>
                 <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
                 </svg>
               </a>
-
-              <!-- Disabled Past Event Ticket Button -->
-              <button 
-                v-else 
-                class="pilih-tiket-btn past-event-btn" 
-                disabled
-              >
-                <span>{{ t('lihatTiket') }}</span>
-              </button>
             </div>
           </div>
         </div>
@@ -930,8 +730,7 @@ const translateMonth = (m) => {
 .pilih-tiket-btn.past-event-btn {
   border-color: rgba(255, 255, 255, 0.08) !important;
   color: #555555 !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
+  cursor: pointer !important;
   background-color: transparent !important;
 }
 
@@ -947,9 +746,8 @@ const translateMonth = (m) => {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.pilih-tiket-btn:hover .btn-arrow,
-.grid-event-card:hover .pilih-tiket-btn:not(.past-event-btn) .btn-arrow {
-  transform: translateX(3px);
+.grid-event-card:hover .pilih-tiket-btn .btn-arrow {
+  transform: translateX(4px);
 }
 
 .empty-events-state {

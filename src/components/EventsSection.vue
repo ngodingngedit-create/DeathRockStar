@@ -1,56 +1,63 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
 
-// Import local image assets
-import noiseImg from '../assets/images/event_noise_parade.png'
-import southSideImg from '../assets/images/event_south_side.png'
-import undercityImg from '../assets/images/event_undercity.png'
+const events = ref([])
 
-const events = ref([
-  {
-    id: 1,
-    day: '15',
-    month: 'JUN',
-    year: '2024',
-    title: 'NOISE PARADE',
-    venue: 'Live House, Jakarta',
-    time: '19:00 - 23:00 WIB',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 150000,
-    isFavorite: false,
-    ticketLink: '#events'
-  },
-  {
-    id: 2,
-    day: '29',
-    month: 'JUN',
-    year: '2024',
-    title: 'SOUTH SIDE FEST',
-    venue: 'Parkir Timur Senayan, Jakarta',
-    time: '15:00 - 22:00 WIB',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 250000,
-    isFavorite: false,
-    ticketLink: '#events'
-  },
-  {
-    id: 3,
-    day: '12',
-    month: 'JUL',
-    year: '2024',
-    title: 'UNDERCITY GIGS',
-    venue: 'Ruang Bawah Tanah, Bandung',
-    time: '19:00 - 23:00 WIB',
-    image: undercityImg,
-    category: 'UNDERGROUND',
-    price: 120000,
-    isFavorite: false,
-    ticketLink: '#events'
+onMounted(async () => {
+  try {
+    const isProd = import.meta.env.PROD || window.location.hostname.includes('api.kolektix.com');
+    const baseUrl = isProd ? 'https://api.kolektix.com' : 'https://api.kolektix.my.id';
+    const creatorId = isProd ? 146 : 11;
+    
+    const res = await fetch(`${baseUrl}/api/event-by-creator/${creatorId}`);
+    const resData = await res.json();
+    
+    if (resData && resData.data && Array.isArray(resData.data)) {
+      events.value = resData.data.slice(0, 3).map(item => {
+        const dateObj = new Date(item.start_date || new Date());
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const monthMap = {
+          '01': 'JAN', '02': 'PEB', '03': 'MAR', '04': 'APR', '05': 'MEI', '06': 'JUN',
+          '07': 'JUL', '08': 'AGU', '09': 'SEP', '10': 'OKT', '11': 'NOV', '12': 'DES'
+        };
+        const monthKey = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const month = monthMap[monthKey] || 'JAN';
+        const year = dateObj.getFullYear().toString();
+        
+        let price = item.starting_price || 0;
+        if (item.has_event_ticket && item.has_event_ticket.length > 0) {
+          const validTickets = item.has_event_ticket.filter(t => t.price > 0);
+          if (validTickets.length > 0) {
+             price = Math.min(...validTickets.map(t => t.price));
+          } else {
+             price = item.has_event_ticket[0].price;
+          }
+        }
+        
+        return {
+          id: item.id,
+          slug: item.slug,
+          title: item.name,
+          date: item.start_date,
+          day: day,
+          month: month,
+          year: year,
+          location: item.location_city || item.location_name || 'Lokasi tidak diketahui',
+          venue: `${item.location_name}, ${item.location_city}`,
+          time: `${item.start_time ? item.start_time.substring(0, 5) : '00:00'} - ${item.end_time ? item.end_time.substring(0, 5) : '00:00'} ${item.zone_time || 'WIB'}`,
+          image: item.image_url,
+          category: item.has_event_format?.name?.toUpperCase() || 'EVENT',
+          price: price,
+          isFavorite: false,
+          ticketLink: '#events'
+        };
+      });
+    }
+  } catch (error) {
+    console.error('Failed to fetch events:', error);
   }
-])
+});
 
 const translateLocation = (venue) => {
   if (!venue) return ''
@@ -79,8 +86,8 @@ const formatPrice = (price) => {
   return price.toLocaleString('id-ID')
 }
 
-const navigateToDetail = (id) => {
-  window.location.hash = `#event-detail-${id}`
+const navigateToDetail = (slug) => {
+  window.location.hash = `#event-detail-${slug}`
 }
 </script>
 
@@ -171,7 +178,7 @@ const navigateToDetail = (id) => {
                 <span class="price-label">{{ t('mulaiDari') }}</span>
                 <span class="price-amount">Rp {{ formatPrice(event.price) }}</span>
               </div>
-              <a :href="'#event-detail-' + event.id" class="pilih-tiket-btn" @click.prevent="navigateToDetail(event.id)">
+              <a :href="'#event-detail-' + event.slug" class="pilih-tiket-btn" @click.prevent="navigateToDetail(event.slug)">
                 <span>{{ t('pilihTiket') }}</span>
                 <svg class="btn-arrow-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />

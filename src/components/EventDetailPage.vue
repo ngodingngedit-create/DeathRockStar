@@ -8,8 +8,8 @@ import southSideImg from '../assets/images/event_south_side.png'
 import undercityImg from '../assets/images/event_undercity.png'
 
 const props = defineProps({
-  eventId: {
-    type: Number,
+  eventSlug: {
+    type: String,
     required: true
   }
 })
@@ -482,8 +482,83 @@ onUnmounted(() => {
 })
 
 // Find current event details
+const fetchedEvent = ref(null)
+const isLoading = ref(true)
+
+const fetchEventDetail = async () => {
+  if (!props.eventSlug) return
+  isLoading.value = true
+  try {
+    const isProd = import.meta.env.PROD || window.location.hostname.includes('api.kolektix.com');
+    const baseUrl = isProd ? 'https://api.kolektix.com' : 'https://api.kolektix.my.id';
+    
+    const res = await fetch(`${baseUrl}/api/event/${props.eventSlug}`);
+    const resData = await res.json();
+    
+    if (resData && resData.data) {
+      const item = resData.data;
+      const dateObj = new Date(item.start_date || new Date());
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const monthMap = {
+        '01': 'JAN', '02': 'PEB', '03': 'MAR', '04': 'APR', '05': 'MEI', '06': 'JUN',
+        '07': 'JUL', '08': 'AGU', '09': 'SEP', '10': 'OKT', '11': 'NOV', '12': 'DES'
+      };
+      const monthKey = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const month = monthMap[monthKey] || 'JAN';
+      const year = dateObj.getFullYear().toString();
+      
+      let price = item.starting_price || 0;
+      if (item.has_event_ticket && item.has_event_ticket.length > 0) {
+        const validTickets = item.has_event_ticket.filter(t => t.price > 0);
+        if (validTickets.length > 0) {
+           price = Math.min(...validTickets.map(t => t.price));
+        } else {
+           price = item.has_event_ticket[0].price;
+        }
+      }
+      
+      let tickets = [];
+      if (item.has_event_ticket && item.has_event_ticket.length > 0) {
+         tickets = item.has_event_ticket.map((t, idx) => ({
+             id: t.id || `ticket_${idx}`,
+             name: t.name || t.ticket_type_id,
+             price: t.price || 0,
+             originalPrice: t.price ? Math.round(t.price * 1.5) : 0,
+             qty: 0,
+             status: t.is_sold_out ? 'habis' : 'aktif',
+             discountLabel: t.is_promo ? 'PROMO' : ''
+         }));
+      }
+
+      fetchedEvent.value = {
+        id: item.id,
+        slug: item.slug,
+        title: item.name,
+        date: item.start_date,
+        day: day,
+        month: month,
+        year: year,
+        location: item.location_city || item.location_name || 'Lokasi tidak diketahui',
+        venue: `${item.location_name}, ${item.location_city}`,
+        address: item.location_address,
+        time: `${item.start_time ? item.start_time.substring(0, 5) : '00:00'} - ${item.end_time ? item.end_time.substring(0, 5) : '00:00'} ${item.zone_time || 'WIB'}`,
+        image: item.image_base64 || item.image_url || item.image || noiseImg,
+        category: item.has_event_format?.name?.toUpperCase() || 'EVENT',
+        price: price,
+        desc: item.description || '',
+        term_condition: item.term_condition || '',
+        tickets: tickets
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch event detail:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
 const currentEvent = computed(() => {
-  return events.find(e => e.id === props.eventId) || events[0]
+  return fetchedEvent.value || events[0]
 })
 
 const isPastEvent = computed(() => {
@@ -539,9 +614,13 @@ const initializeTickets = () => {
     { id: 'ramean', name: 'GELOMBANG RAMEAN (BUNDLING 4 ORANG)', price: Math.round(basePrice * 0.75), qty: 0, status: 'habis' },
     { id: 'vip', name: 'VIP ACCESS EXPERIENCE', price: Math.round(basePrice * 1.2), originalPrice: Math.round(basePrice * 1.5), discountLabel: 'PROMO RILIS', qty: 0, status: 'aktif' }
   ]
+  if (currentEvent.value.tickets && currentEvent.value.tickets.length > 0) {
+      ticketTiers.value = currentEvent.value.tickets;
+  }
 }
 
-watch(() => props.eventId, () => {
+watch(() => props.eventSlug, async () => {
+  await fetchEventDetail()
   initializeTickets()
   startCountdown()
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -583,7 +662,10 @@ const scrollLineup = (direction) => {
 
 // Recommended Events logic (Shows 4 other events, excluding current one)
 const recommendedEvents = computed(() => {
-  return events.filter(e => e.id !== props.eventId).slice(0, 4)
+  return events.filter(e => String(e.id) !== String(props.eventSlug)).slice(0, 4).map(e => ({
+      ...e,
+      slug: e.slug || e.title.toLowerCase().replace(/\s+/g, '-')
+  }))
 })
 
 const recommendedScrollRef = ref(null)
@@ -620,10 +702,10 @@ const handleOrderNow = () => {
   
   // Save selected tickets data to localStorage to read in TransactionEvent
   const checkoutData = {
-    eventId: props.eventId,
+    eventId: props.eventSlug,
     tickets: ticketTiers.value.filter(t => t.qty > 0).map(t => ({
       id: t.id,
-      name: getTierName(t.id),
+      name: t.name || getTierName(t.id),
       price: t.price,
       qty: t.qty
     })),
@@ -847,7 +929,7 @@ const toggleTicketTier = (tier) => {
             <!-- Tentang Event Section -->
             <section class="content-section">
               <h2 class="section-heading">{{ currentLang === 'id' ? 'TENTANG EVENT' : 'ABOUT THE EVENT' }}</h2>
-              <p class="event-description-text">{{ getEventDesc(currentEvent.id) || currentEvent.desc }}</p>
+              <div class="event-description-text" v-html="currentEvent.desc || getEventDesc(currentEvent.id)"></div>
             </section>
 
             <!-- Lineup Carousel Section -->
@@ -1068,7 +1150,8 @@ const toggleTicketTier = (tier) => {
             <section class="content-section">
               <h2 class="section-heading">{{ t('detailSyarat') }}</h2>
               
-              <ul class="event-rules-list">
+              <div v-if="currentEvent.term_condition" class="event-rules-html" v-html="currentEvent.term_condition"></div>
+              <ul v-else class="event-rules-list">
                 <li v-for="(rule, idx) in rules" :key="idx" class="rule-item">
                   <div class="rule-icon-box" :class="rule.icon">
                     <!-- Check Icon -->
@@ -1280,7 +1363,7 @@ const toggleTicketTier = (tier) => {
         </div>
 
         <div class="recommended-slider-container" ref="recommendedScrollRef">
-          <a v-for="rec in recommendedEvents" :key="rec.id" :href="'#event-detail-' + rec.id" class="rec-event-card">
+          <a v-for="rec in recommendedEvents" :key="rec.id" :href="'#event-detail-' + rec.slug" class="rec-event-card">
             <div class="rec-card-image-box">
               <img :src="rec.image" :alt="rec.title" class="rec-card-img" />
               <div class="rec-badge-overlay">
