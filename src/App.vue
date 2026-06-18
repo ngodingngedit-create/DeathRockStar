@@ -72,7 +72,7 @@ onMounted(() => {
         <HeroSection />
         <MerchSection />
         <MarqueeSection />
-        <EventsSection />
+        <!-- <EventsSection /> -->
       </div>
     </main>
 

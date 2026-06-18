@@ -43,7 +43,7 @@ const selectLanguage = (lang) => {
 const navLinks = computed(() => [
   { name: t('home'), href: '#home' },
   { name: t('merch'), href: '#merch-page' },
-  { name: t('events'), href: '#events-page' }
+  // { name: t('events'), href: '#events-page' }
 ])
 
 const searchEvents = [

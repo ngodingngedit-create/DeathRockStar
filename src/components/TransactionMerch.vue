@@ -366,13 +366,94 @@ const updateShippingFee = () => {
 }
 
 
+// --- Voucher Logic ---
+const voucherCodeInput = ref('')
+const appliedVoucherCode = ref('')
+const voucherDiscount = ref(0)
+const isVoucherLoading = ref(false)
+const voucherMessage = ref('')
+const isVoucherError = ref(false)
+
+const applyVoucher = async () => {
+  if (!voucherCodeInput.value.trim()) return
+  
+  isVoucherLoading.value = true
+  voucherMessage.value = ''
+  isVoucherError.value = false
+  
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  const formattedDate = `${year}-${month}-${day}`
+  
+  const payload = {
+    module_id: "2",
+    product_id: String(cartItems.value[0]?.product_id || "140"),
+    code: voucherCodeInput.value,
+    date: formattedDate
+  }
+  
+  try {
+    const res = await fetch('https://api.kolektix.my.id/api/vouchers-merch/validate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    const result = await res.json()
+    
+    const vData = result.voucher || result.data
+    if (res.ok && (result.status === 200 || vData)) {
+      appliedVoucherCode.value = voucherCodeInput.value
+      
+      let calcDiscount = 0
+      if (vData) {
+        if (vData.is_percentage === 1 || vData.type === 'persentase' || vData.type === 'percentage') {
+          const perc = Number(vData.discount || 0)
+          calcDiscount = totalCartPrice.value * (perc / 100)
+        } else {
+          calcDiscount = Number(vData.discount || vData.nominal || vData.amount || 0)
+        }
+      }
+      
+      voucherDiscount.value = calcDiscount
+      voucherMessage.value = result.message || (currentLang.value === 'id' ? 'Voucher berhasil digunakan!' : 'Voucher applied successfully!')
+      isVoucherError.value = false
+    } else {
+      voucherMessage.value = result.message || (currentLang.value === 'id' ? 'Voucher tidak valid' : 'Invalid voucher')
+      isVoucherError.value = true
+      voucherDiscount.value = 0
+      appliedVoucherCode.value = ''
+    }
+  } catch (error) {
+    voucherMessage.value = currentLang.value === 'id' ? 'Terjadi kesalahan' : 'An error occurred'
+    isVoucherError.value = true
+    voucherDiscount.value = 0
+    appliedVoucherCode.value = ''
+  } finally {
+    isVoucherLoading.value = false
+  }
+}
+
+const removeVoucher = () => {
+  voucherCodeInput.value = ''
+  appliedVoucherCode.value = ''
+  voucherDiscount.value = 0
+  voucherMessage.value = ''
+  isVoucherError.value = false
+}
+
 // --- Checkout Calculations & Submit ---
 const totalAdminFee = computed(() => {
   return originData.admin_fee || 2000
 })
 
 const grandTotal = computed(() => {
-  return totalCartPrice.value + totalAdminFee.value + shippingFee.value
+  const total = totalCartPrice.value + totalAdminFee.value + shippingFee.value - voucherDiscount.value
+  return total > 0 ? total : 0
 })
 
 const goBack = () => {
@@ -414,7 +495,8 @@ const handleCheckoutSubmit = async () => {
     total_price: totalCartPrice.value,
     grandtotal: grandTotal.value,
     admin_fee: totalAdminFee.value,
-    discount: 0,
+    discount: voucherDiscount.value,
+    voucher_code: appliedVoucherCode.value || null,
     product: cartItems.value.map(item => ({
       product_id: item.product_id,
       qty: item.quantity,
@@ -563,6 +645,10 @@ onMounted(() => {
                     <span class="mobile-price-lbl">Biaya Admin</span>
                     <span class="mobile-price-val">{{ formatPrice(totalAdminFee) }}</span>
                   </div>
+                  <div v-if="voucherDiscount > 0" class="mobile-price-row" style="color: #4ade80;">
+                    <span class="mobile-price-lbl">Diskon Voucher</span>
+                    <span class="mobile-price-val">-{{ formatPrice(voucherDiscount) }}</span>
+                  </div>
                   <div class="mobile-price-divider"></div>
                   <div class="mobile-price-row total">
                     <span class="mobile-price-lbl">Total Pembayaran</span>
@@ -667,6 +753,45 @@ onMounted(() => {
               </div>
             </div>
             
+            <!-- Voucher Section -->
+            <div class="voucher-section my-4" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 1rem; margin-bottom: 1rem; margin-top: 1rem;">
+              <h4 class="form-field-label mb-2">{{ currentLang === 'id' ? 'Kode Voucher' : 'Voucher Code' }}</h4>
+              <div class="flex gap-2" style="display: flex; gap: 0.5rem;">
+                <input 
+                  type="text" 
+                  v-model="voucherCodeInput" 
+                  :placeholder="currentLang === 'id' ? 'Masukkan kode' : 'Enter code'" 
+                  class="checkout-text-input" 
+                  style="flex-grow: 1; padding: 0.65rem 1rem;"
+                  :disabled="!!appliedVoucherCode"
+                />
+                <button 
+                  v-if="!appliedVoucherCode"
+                  class="btn-primary" 
+                  @click="applyVoucher"
+                  :disabled="isVoucherLoading"
+                  style="padding: 0.65rem 1.2rem;"
+                >
+                  {{ isVoucherLoading ? '...' : (currentLang === 'id' ? 'Terapkan' : 'Apply') }}
+                </button>
+                <button 
+                  v-else
+                  class="btn-outline" 
+                  @click="removeVoucher"
+                  style="padding: 0.65rem 1.2rem; border-color: #ff3b30; color: #ff3b30;"
+                >
+                  {{ currentLang === 'id' ? 'Hapus' : 'Remove' }}
+                </button>
+              </div>
+              <span 
+                v-if="voucherMessage" 
+                class="block mt-2 text-sm"
+                :style="{ color: isVoucherError ? '#ff3b30' : '#4ade80', display: 'block', marginTop: '0.5rem', fontSize: '0.85rem' }"
+              >
+                {{ voucherMessage }}
+              </span>
+            </div>
+
             <div class="summary-totals-box">
               <div class="totals-line">
                 <span class="totals-label">Subtotal</span>
@@ -679,6 +804,10 @@ onMounted(() => {
               <div class="totals-line">
                 <span class="totals-label">Biaya Admin</span>
                 <span class="totals-val">{{ formatPrice(totalAdminFee) }}</span>
+              </div>
+              <div v-if="voucherDiscount > 0" class="totals-line" style="color: #4ade80;">
+                <span class="totals-label">Diskon Voucher</span>
+                <span class="totals-val">-{{ formatPrice(voucherDiscount) }}</span>
               </div>
               <div class="totals-divider"></div>
               <div class="totals-line grand-total-line">
