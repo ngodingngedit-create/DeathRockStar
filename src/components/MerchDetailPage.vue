@@ -6,7 +6,7 @@ import { products, fetchProducts } from '../store/apiStore.js'
 
 const props = defineProps({
   productId: {
-    type: Number,
+    type: [Number, String],
     required: true
   }
 })
@@ -24,7 +24,7 @@ onUnmounted(() => {
 
 // Current Product from store
 const currentProduct = computed(() => {
-  const p = products.value.find(item => item.id === props.productId)
+  const p = products.value.find(item => String(item.id) === String(props.productId))
   if (p) return p
   return products.value[0] || {
     id: props.productId,
@@ -221,7 +221,7 @@ const goBack = () => {
 
 // Related products
 const relatedProducts = computed(() => {
-  return products.value.filter(p => p.id !== props.productId).slice(0, 4)
+  return products.value.filter(p => String(p.id) !== String(props.productId)).slice(0, 4)
 })
 
 const goToProduct = (id) => {

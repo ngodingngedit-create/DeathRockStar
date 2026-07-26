@@ -15,7 +15,8 @@ import Footer from './components/Footer.vue'
 import MobileBottomNav from './components/MobileBottomNav.vue'
 
 const currentRoute = ref(window.location.hash)
-const selectedEventId = ref(1)
+const selectedEventSlug = ref('')
+const selectedProductId = ref(1)
 
 const isEventDetail = computed(() => {
   return currentRoute.value && currentRoute.value.startsWith('#event-detail-')
@@ -34,10 +35,12 @@ const getEventSlugFromHash = (hash) => {
 
 const getProductIdFromHash = (hash) => {
   if (hash.startsWith('#merch-detail-')) {
-    return parseInt(hash.replace('#merch-detail-', '')) || 1
+    const raw = hash.replace('#merch-detail-', '')
+    return parseInt(raw, 10) || raw || 1
   }
   if (hash.startsWith('#product-detail-')) {
-    return parseInt(hash.replace('#product-detail-', '')) || 1
+    const raw = hash.replace('#product-detail-', '')
+    return parseInt(raw, 10) || raw || 1
   }
   return 1
 }
@@ -91,8 +94,8 @@ onMounted(() => {
       </div>
       <div v-else>
         <HeroSection />
-        <MerchSection />
         <MarqueeSection />
+        <MerchSection />
         <!-- <EventsSection /> -->
       </div>
     </main>
