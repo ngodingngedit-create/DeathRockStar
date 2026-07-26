@@ -133,7 +133,7 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Koleksi' : 'Collection' }}</span>
       </a>
 
-      <!-- Event -->
+      <!-- Event (Hidden but not deleted)
       <a
         href="#events-page"
         class="bottom-nav-item"
@@ -151,6 +151,7 @@ onMounted(() => {
         </div>
         <span class="tab-label">{{ currentLang === 'id' ? 'Event' : 'Events' }}</span>
       </a>
+      -->
 
       <!-- Toko (Store) -->
       <a
@@ -248,7 +249,7 @@ onMounted(() => {
               <a
                 v-for="product in filteredSearchProducts"
                 :key="product.id"
-                href="#merch-page"
+                :href="'#merch-detail-' + product.id"
                 class="msearch-card"
                 @click="isSearchOpen = false"
               >

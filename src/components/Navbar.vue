@@ -31,8 +31,9 @@ const toggleMobileMenu = () => {
 }
 
 const handleCheckout = () => {
+  alert(t('checkoutAlert'))
+  cartItems.value = []
   isCartOpen.value = false
-  window.location.hash = '#transaction-merch'
 }
 
 const selectLanguage = (lang) => {
@@ -42,14 +43,14 @@ const selectLanguage = (lang) => {
 
 const navLinks = computed(() => [
   { name: t('home'), href: '#home' },
-  { name: t('merch'), href: '#merch-page' },
+  { name: t('merch'), href: '#merch-page' }
   // { name: t('events'), href: '#events-page' }
 ])
 
 const searchEvents = [
-  { id: 1, slug: 'noise-parade-2026', title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
-  { id: 2, slug: 'south-side-fest', title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
-  { id: 3, slug: 'undercity-gigs', title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
+  { id: 1, title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
+  { id: 2, title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
+  { id: 3, title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
 ]
 
 const searchProducts = [
@@ -407,7 +408,7 @@ onMounted(() => {
                   <a 
                     v-for="event in filteredSearchEvents" 
                     :key="event.id" 
-                    :href="'#event-detail-' + event.slug"
+                    :href="'#event-detail-' + event.id"
                     class="search-result-card"
                     @click="isSearchOpen = false"
                   >
@@ -428,7 +429,7 @@ onMounted(() => {
                   <a 
                     v-for="product in filteredSearchProducts" 
                     :key="product.id" 
-                    href="#merch-page"
+                    :href="'#merch-detail-' + product.id"
                     class="search-result-card"
                     @click="isSearchOpen = false"
                   >
@@ -479,9 +480,7 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 90px;
-  background-color: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: #0b0b0b;
   border-bottom: 1px solid var(--border-color);
   z-index: 100;
   display: flex;
@@ -657,6 +656,18 @@ onMounted(() => {
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.9);
 }
 
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 998;
+}
+
 .menu-backdrop {
   position: fixed;
   top: 0;
@@ -738,8 +749,8 @@ onMounted(() => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -1444,7 +1455,7 @@ onMounted(() => {
   position: fixed;
   top: 90px;
   left: 0;
-  width: 100vw;
+  width: 100%;
   height: calc(100vh - 90px);
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);

@@ -1,63 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { events, fetchEvents, isEventsLoading } from '../store/apiStore.js'
 
-const events = ref([])
-
-onMounted(async () => {
-  try {
-    const isProd = import.meta.env.PROD || window.location.hostname.includes('api.kolektix.com');
-    const baseUrl = isProd ? 'https://api.kolektix.com' : 'https://api.kolektix.my.id';
-    const creatorId = isProd ? 146 : 11;
-    
-    const res = await fetch(`${baseUrl}/api/event-by-creator/${creatorId}`);
-    const resData = await res.json();
-    
-    if (resData && resData.data && Array.isArray(resData.data)) {
-      events.value = resData.data.slice(0, 3).map(item => {
-        const dateObj = new Date(item.start_date || new Date());
-        const day = dateObj.getDate().toString().padStart(2, '0');
-        const monthMap = {
-          '01': 'JAN', '02': 'PEB', '03': 'MAR', '04': 'APR', '05': 'MEI', '06': 'JUN',
-          '07': 'JUL', '08': 'AGU', '09': 'SEP', '10': 'OKT', '11': 'NOV', '12': 'DES'
-        };
-        const monthKey = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-        const month = monthMap[monthKey] || 'JAN';
-        const year = dateObj.getFullYear().toString();
-        
-        let price = item.starting_price || 0;
-        if (item.has_event_ticket && item.has_event_ticket.length > 0) {
-          const validTickets = item.has_event_ticket.filter(t => t.price > 0);
-          if (validTickets.length > 0) {
-             price = Math.min(...validTickets.map(t => t.price));
-          } else {
-             price = item.has_event_ticket[0].price;
-          }
-        }
-        
-        return {
-          id: item.id,
-          slug: item.slug,
-          title: item.name,
-          date: item.start_date,
-          day: day,
-          month: month,
-          year: year,
-          location: item.location_city || item.location_name || 'Lokasi tidak diketahui',
-          venue: `${item.location_name}, ${item.location_city}`,
-          time: `${item.start_time ? item.start_time.substring(0, 5) : '00:00'} - ${item.end_time ? item.end_time.substring(0, 5) : '00:00'} ${item.zone_time || 'WIB'}`,
-          image: item.image_url,
-          category: item.has_event_format?.name?.toUpperCase() || 'EVENT',
-          price: price,
-          isFavorite: false,
-          ticketLink: '#events'
-        };
-      });
-    }
-  } catch (error) {
-    console.error('Failed to fetch events:', error);
+onMounted(() => {
+  if (events.value.length === 0) {
+    fetchEvents()
   }
-});
+})
 
 const translateLocation = (venue) => {
   if (!venue) return ''
@@ -69,26 +19,6 @@ const translateLocation = (venue) => {
   }
   return venue
 }
-
-const translateTime = (timeStr) => {
-  if (!timeStr) return ''
-  if (currentLang.value === 'id') {
-    return timeStr.replace('Doors open', 'Pintu dibuka')
-  }
-  return timeStr
-}
-
-const toggleFavorite = (event) => {
-  event.isFavorite = !event.isFavorite
-}
-
-const formatPrice = (price) => {
-  return price.toLocaleString('id-ID')
-}
-
-const navigateToDetail = (slug) => {
-  window.location.hash = `#event-detail-${slug}`
-}
 </script>
 
 <template>
@@ -97,8 +27,8 @@ const navigateToDetail = (slug) => {
       <!-- Section Header -->
       <div class="section-header">
         <div class="header-left">
-          <span class="section-tag">{{ t('events') }}</span>
-          <h2 class="section-title">{{ t('eventsTitle') }}</h2>
+          <span class="section-tag">{{ t('livePerformances') }}</span>
+          <h2 class="section-title">{{ t('upcomingEvents') }}</h2>
         </div>
         <a href="#events-page" class="view-all-link hover-underline">
           {{ t('viewAllEvents') }} 
@@ -108,80 +38,55 @@ const navigateToDetail = (slug) => {
         </a>
       </div>
 
-      <!-- Events List -->
-      <div class="events-list">
-        <div v-for="event in events" :key="event.id" class="event-card">
-          <!-- Image Column (Left on Desktop, Top on Mobile) - Full-bleed top/bottom/left -->
-          <div class="event-image-wrapper">
-            <div 
-              class="event-image" 
-              :style="{ backgroundImage: `url(${event.image})` }"
-              role="img"
-              :aria-label="event.title"
-            ></div>
+      <!-- Events Grid -->
+      <div class="events-grid">
+        <div 
+          v-for="event in events" 
+          :key="event.id" 
+          class="event-card"
+        >
+          <!-- Date Badge -->
+          <div class="event-date-badge">
+            <span class="date-day">{{ event.day }}</span>
+            <span class="date-month">{{ event.month }}</span>
           </div>
 
-          <!-- Detail Information Column (Right on Desktop, Center/Bottom on Mobile) -->
-          <div class="event-details-container">
-            <!-- Header section of details: Badge and Favorite Button -->
-            <div class="event-details-header">
-              <span class="event-badge">{{ event.category }}</span>
-              <button class="favorite-btn" @click="toggleFavorite(event)" aria-label="Favorite Event">
-                <svg 
-                  class="heart-icon" 
-                  :class="{ 'is-favorite': event.isFavorite }" 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  stroke-width="2" 
-                  stroke-linecap="round" 
-                  stroke-linejoin="round"
-                >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-              </button>
-            </div>
+          <!-- Image Container -->
+          <div class="event-image-wrapper">
+            <img :src="event.image" :alt="event.title" class="event-image" />
+            <div class="image-overlay"></div>
+            <span class="event-category-badge">{{ event.category }}</span>
+          </div>
 
-            <!-- Title -->
-            <h3 class="event-title">{{ event.title }}</h3>
-
-            <!-- Metadata: Date, Location & Time -->
+          <!-- Event Details -->
+          <div class="event-details">
             <div class="event-meta">
-              <!-- Date item -->
-              <div class="meta-item">
-                <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span class="meta-text-bold">{{ event.day }} {{ event.month }} {{ event.year }}</span>
-              </div>
-              <!-- Location item -->
-              <div class="meta-item">
+              <span class="event-venue">
                 <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>{{ translateLocation(event.venue) }}</span>
-              </div>
-              <!-- Time item -->
-              <div class="meta-item">
+                {{ translateLocation(event.venue) }}
+              </span>
+              <span class="event-time">
                 <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{{ translateTime(event.time) }}</span>
-              </div>
+                {{ event.time }}
+              </span>
             </div>
 
-            <!-- Footer: Price & Ticket Button -->
+            <h3 class="event-title">{{ event.title }}</h3>
+
             <div class="event-footer">
-              <div class="event-price-box">
-                <span class="price-label">{{ t('mulaiDari') }}</span>
-                <span class="price-amount">Rp {{ formatPrice(event.price) }}</span>
+              <div class="price-container">
+                <span class="price-label">{{ t('startsFrom') }}</span>
+                <span class="price-amount">Rp {{ event.price.toLocaleString('id-ID') }}</span>
               </div>
-              <a :href="'#event-detail-' + event.slug" class="pilih-tiket-btn" @click.prevent="navigateToDetail(event.slug)">
-                <span>{{ t('pilihTiket') }}</span>
-                <svg class="btn-arrow-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+              <a :href="`#event-detail-${event.slug || event.id}`" class="ticket-btn">
+                <span>{{ t('getTicket') }}</span>
+                <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </a>
             </div>
@@ -194,17 +99,16 @@ const navigateToDetail = (slug) => {
 
 <style scoped>
 .events-section {
-  background-color: #121212;
-  padding: 4rem 0 8rem 0;
-  overflow: hidden;
+  background-color: var(--bg-secondary);
+  padding: 6rem 0;
+  border-top: 1px solid var(--border-color);
 }
 
-/* Section Header */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 4rem;
+  margin-bottom: 3.5rem;
 }
 
 .header-left {
@@ -225,28 +129,25 @@ const navigateToDetail = (slug) => {
 }
 
 .section-title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
-  line-height: 1.1;
-  max-width: 600px;
-  color: #FFFFFF;
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-weight: 900;
+  line-height: 1;
 }
 
 .view-all-link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #FFFFFF;
+  color: var(--text-primary);
   padding-bottom: 4px;
-  flex-shrink: 0;
 }
 
 .link-arrow {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -254,302 +155,185 @@ const navigateToDetail = (slug) => {
   transform: translateX(4px);
 }
 
-/* Events List Structure */
-.events-list {
-  display: flex;
-  flex-direction: column;
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
 }
 
-/* Event Card base layout - no overflow hidden to support ticket stub holes */
 .event-card {
   position: relative;
-  display: grid;
-  grid-template-columns: 480px 1fr;
-  align-items: stretch;
-  background-color: #1E1E1E;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
 .event-card:hover {
-  background-color: #252525;
+  transform: translateY(-6px);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Ticket Punch Holes design using pseudo-elements */
-.event-card::before {
-  content: '';
+.event-date-badge {
   position: absolute;
-  left: -18px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  background-color: #121212;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
-  z-index: 5;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  background-color: #000000;
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.event-card::after {
-  content: '';
-  position: absolute;
-  right: -18px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  background-color: #121212;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
-  z-index: 5;
+.date-day {
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
-/* Image styling - full bleed left, top, bottom on desktop */
+.date-month {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .event-image-wrapper {
   position: relative;
   width: 100%;
-  height: 100%;
-  min-height: 170px;
-  border-radius: 8px 0 0 8px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
 }
 
 .event-image {
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
-  filter: brightness(0.82);
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
 .event-card:hover .event-image {
   transform: scale(1.05);
 }
 
-/* Details and Actions container */
-.event-details-container {
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+}
+
+.event-category-badge {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.event-details {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   flex-grow: 1;
-  padding: 1.25rem 2.5rem 1.25rem 4rem;
-}
-
-.event-details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Badge category tag styled white */
-.event-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1.5px solid #FFFFFF;
-  color: #FFFFFF;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.favorite-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  transition: transform 0.2s ease;
-}
-
-.favorite-btn:hover {
-  transform: scale(1.1);
-}
-
-.heart-icon {
-  width: 24px;
-  height: 24px;
-  stroke: #FFFFFF;
-  fill: transparent;
-  transition: fill 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.heart-icon.is-favorite {
-  fill: #FF3B30;
-  stroke: #FF3B30;
-}
-
-.event-title {
-  font-family: var(--font-heading);
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #FFFFFF;
-  margin: 0.5rem 0;
-  line-height: 1.2;
-  text-transform: uppercase;
   text-align: left;
 }
 
 .event-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
 }
 
-.meta-item {
+.event-venue, .event-time {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #A0A0A0;
-  text-align: left;
-}
-
-.meta-text-bold {
-  font-weight: 700;
-  color: #FFFFFF;
+  gap: 0.4rem;
 }
 
 .meta-icon {
-  width: 16px;
-  height: 16px;
-  color: #A0A0A0;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
-/* Event price and buttons */
+.event-title {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 0 0 1.5rem 0;
+}
+
 .event-footer {
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-top: auto;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
 }
 
-.event-price-box {
+.price-container {
   display: flex;
   flex-direction: column;
-  text-align: left;
 }
 
 .price-label {
-  font-size: 0.75rem;
-  color: #A0A0A0;
+  font-size: 0.65rem;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-/* Price amount styled white */
 .price-amount {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  margin-top: 2px;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
-.pilih-tiket-btn {
+.ticket-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  background-color: transparent;
-  color: #FFFFFF;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
+  gap: 0.4rem;
+  background-color: #ffffff;
+  color: #000000;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
 }
 
-.pilih-tiket-btn:hover,
-.event-card:hover .pilih-tiket-btn {
-  background-color: #FFFFFF;
-  color: #121212;
-  border-color: #FFFFFF;
+.ticket-btn:hover {
+  background-color: #e5e5e5;
 }
 
-.btn-arrow-icon {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.btn-arrow {
+  width: 12px;
+  height: 12px;
 }
 
-.pilih-tiket-btn:hover .btn-arrow-icon,
-.event-card:hover .btn-arrow-icon {
-  transform: translateX(4px);
-}
-
-@media (max-width: 1023px) {
-  .event-card {
-    grid-template-columns: 360px 1fr;
-  }
-  
-  .event-details-container {
-    padding: 1.25rem 1.5rem 1.25rem 2.5rem;
-  }
-  
-  .event-title {
-    font-size: 1.5rem;
+@media (max-width: 992px) {
+  .events-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 767px) {
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .section-title {
-    font-size: 1.6rem;
-  }
-
-  .view-all-link {
-    font-size: 0.72rem;
-  }
-
-  .event-card {
+@media (max-width: 640px) {
+  .events-grid {
     grid-template-columns: 1fr;
-  }
-  
-  /* On mobile, full bleed left/top/right for image */
-  .event-image-wrapper {
-    width: 100%;
-    height: 180px;
-    min-height: auto;
-    border-radius: 8px 8px 0 0;
-  }
-  
-  .event-details-container {
-    padding: 1.5rem;
-  }
-  
-  .event-footer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .event-price-box {
-    margin-bottom: 0.25rem;
-  }
-  
-  .pilih-tiket-btn {
-    display: none;
   }
 }
 </style>

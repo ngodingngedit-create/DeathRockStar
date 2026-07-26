@@ -14,266 +14,6 @@ const props = defineProps({
   }
 })
 
-// Full events data (identical to EventsPage.vue to ensure seamless data alignment)
-const events = [
-  {
-    id: 1,
-    title: 'NOISE PARADE 2026',
-    date: '2026-06-15',
-    day: '15',
-    month: 'JUN',
-    year: '2026',
-    location: 'Jakarta Pusat',
-    venue: 'Live House, Jakarta',
-    address: 'Jl. Kemang Raya No. 16, Jakarta Selatan',
-    time: '19:00 - 23:00 WIB (Doors open 18:00 WIB)',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 150000,
-    desc: 'Noise Parade 2026 hadir kembali dengan energi lebih besar! Malam penuh dentuman musik, aksi panggung, dan euforia tanpa henti. Bersiaplah untuk merasakan pengalaman live yang tak terlupakan bersama lineup terbaik pilihan Death Rock Star. Jangan sampai ketinggalan!'
-  },
-  {
-    id: 2,
-    title: 'SOUTH SIDE FEST',
-    date: '2026-06-29',
-    day: '29',
-    month: 'JUN',
-    year: '2026',
-    location: 'Jakarta Selatan',
-    venue: 'Parkir Timur Senayan, Jakarta',
-    address: 'Gelora Bung Karno, Jl. Pintu Satu Senayan, Jakarta Pusat',
-    time: '15:00 - 22:00 WIB (Doors open 14:00 WIB)',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 250000,
-    desc: 'South Side Fest membawa parade musik alternatif terbesar tahun ini ke Jakarta. Menampilkan panggung outdoor megah dengan pertunjukan audio visual kelas dunia, area kuliner kreatif, dan merchandise eksklusif hanya untuk Anda!'
-  },
-  {
-    id: 3,
-    title: 'UNDERCITY GIGS',
-    date: '2026-07-12',
-    day: '12',
-    month: 'JUL',
-    year: '2026',
-    location: 'Bandung',
-    venue: 'Ruang Bawah Tanah, Bandung',
-    address: 'Jl. Braga No. 109, Sumur Bandung, Bandung',
-    time: '19:00 - 23:00 WIB (Doors open 18:30 WIB)',
-    image: undercityImg,
-    category: 'UNDERGROUND',
-    price: 120000,
-    desc: 'Sebuah malam gigs intim yang berisik di jantung kota Bandung. Temui komunitas underground, rasakan getaran musik distorsi mentah, dan rayakan semangat independen bersama empat band andalan lokal.'
-  },
-  {
-    id: 4,
-    title: 'METALCORE MANIA',
-    date: '2026-08-05',
-    day: '05',
-    month: 'AGU',
-    year: '2026',
-    location: 'Jakarta Barat',
-    venue: 'Tennis Indoor Senayan, Jakarta',
-    address: 'Jl. Pintu Satu Senayan, Kompleks Gelora Bung Karno, Jakarta Pusat',
-    time: '18:00 - 22:00 WIB (Doors open 17:00 WIB)',
-    image: noiseImg,
-    category: 'CONCERT',
-    price: 180000,
-    desc: 'Gelombang distorsi metalcore termegah siap menghantam ibu kota. Aksi panggung penuh headbang, moshing pit aman, dan suara gahar menggelegar dari band-band cadas papan atas tanah air.'
-  },
-  {
-    id: 5,
-    title: 'INDIE POP GIGS',
-    date: '2026-05-10',
-    day: '10',
-    month: 'MEI',
-    year: '2026',
-    location: 'Yogyakarta',
-    venue: 'Rossi Musik, Jakarta',
-    address: 'Jl. Fatmawati No. 30, Jakarta Selatan',
-    time: '20:00 - 23:00 WIB (Doors open 19:00 WIB)',
-    image: southSideImg,
-    category: 'LIVE HOUSE',
-    price: 90000,
-    desc: 'Gigs indie pop berbalut melodi manis, lirik reflektif, dan suasana hangat yang akrab. Cocok untuk bersantai dan bernyanyi bersama teman-teman terdekat menikmati malam syahdu.'
-  },
-  {
-    id: 6,
-    title: 'RETRO SOUNDS 2026',
-    date: '2026-04-20',
-    day: '20',
-    month: 'APR',
-    year: '2026',
-    location: 'Surabaya',
-    venue: 'Gambir Expo Kemayoran, Jakarta',
-    address: 'Arena PRJ Kemayoran, Jakarta Pusat',
-    time: '14:00 - 23:00 WIB (Doors open 13:00 WIB)',
-    image: undercityImg,
-    category: 'FESTIVAL',
-    price: 200000,
-    desc: 'Kembali ke era kejayaan piringan hitam, synth analog, dan lagu-lagu klasik legendaris. Event retro penuh gaya, pameran kaset lawas, dan parade musik yang memicu nostalgia mendalam.'
-  },
-  {
-    id: 7,
-    title: 'JAZZ IN THE GARDEN',
-    date: '2026-03-15',
-    day: '15',
-    month: 'MAR',
-    year: '2026',
-    location: 'Bogor',
-    venue: 'Kebun Raya Bogor, Bogor',
-    address: 'Jl. Ir. H. Juanda No. 13, Bogor Tengah, Bogor',
-    time: '16:00 - 20:00 WIB (Doors open 15:00 WIB)',
-    image: noiseImg,
-    category: 'CONCERT',
-    price: 160000,
-    desc: 'Harmoni musik jazz berkelas di bawah rindangnya pepohonan sore hari. Nikmati tiupan saksofon lembut dan petikan gitar akustik menawan di tengah sejuknya alam Kebun Raya Bogor.'
-  },
-  {
-    id: 8,
-    title: 'HARDCORE SUMMER',
-    date: '2026-02-28',
-    day: '28',
-    month: 'PEB',
-    year: '2026',
-    location: 'Denpasar',
-    venue: 'Rossi Musik, Jakarta',
-    address: 'Jl. Fatmawati No. 30, Jakarta Selatan',
-    time: '17:00 - 22:00 WIB (Doors open 16:00 WIB)',
-    image: southSideImg,
-    category: 'UNDERGROUND',
-    price: 100000,
-    desc: 'Energi hardcore penuh letupan, teriakan lantang, dan semangat kebersamaan komunitas punk lokal. Rayakan hari-hari akhir musim panas dengan aksi panggung super berisik.'
-  },
-  {
-    id: 9,
-    title: 'PUNK ROCK ATTACK',
-    date: '2026-07-20',
-    day: '20',
-    month: 'JUL',
-    year: '2026',
-    location: 'Tangerang',
-    venue: 'Indoor Arena, Tangerang',
-    address: 'Kawasan BSD City, Tangerang, Banten',
-    time: '18:00 - 22:00 WIB (Doors open 17:00 WIB)',
-    image: undercityImg,
-    category: 'UNDERGROUND',
-    price: 110000,
-    desc: 'Malam distorsi kencang khas punk rock dengan ketukan d-beat cepat, lirik sarkastik yang jujur, dan panggung penuh lompatan atraktif. Siapkan sepatu boots terbaikmu!'
-  },
-  {
-    id: 10,
-    title: 'FOLK ACADEMY 2026',
-    date: '2026-08-15',
-    day: '15',
-    month: 'AGU',
-    year: '2026',
-    location: 'Malang',
-    venue: 'Amphitheater, Malang',
-    address: 'Jl. Ijen No. 45, Klojen, Malang, Jawa Timur',
-    time: '19:00 - 22:00 WIB (Doors open 18:00 WIB)',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 130000,
-    desc: 'Senandung gitar akustik, tiupan harmonika, dan suara biola yang menyatu menciptakan malam penuh petualangan musikal folk bernada magis di kota Malang.'
-  },
-  {
-    id: 11,
-    title: 'HIP HOP SUMMIT',
-    date: '2026-09-02',
-    day: '02',
-    month: 'SEP',
-    year: '2026',
-    location: 'Jakarta Utara',
-    venue: 'Pantai Indah Kapuk, Jakarta',
-    address: 'Kawasan PIK 2, Jakarta Utara',
-    time: '16:00 - 23:00 WIB (Doors open 15:00 WIB)',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 220000,
-    desc: 'Parade rima terbaik dari jajaran rapper, DJ, breakdancer, dan graffiti artist andalan. Rayakan kultur hip-hop sesungguhnya langsung di tepi pantai pasir putih PIK.'
-  },
-  {
-    id: 12,
-    title: 'ECHOES OF THE EAST',
-    date: '2026-09-18',
-    day: '18',
-    month: 'SEP',
-    year: '2026',
-    location: 'Makassar',
-    venue: 'Fort Rotterdam, Makassar',
-    address: 'Jl. Ujung Pandang, Makassar, Sulawesi Selatan',
-    time: '17:00 - 22:00 WIB (Doors open 16:00 WIB)',
-    image: undercityImg,
-    category: 'CONCERT',
-    price: 175000,
-    desc: 'Sebuah perayaan musikal megah yang mengangkat band-band independen berkarakter kuat dari bagian timur Indonesia dengan latar sejarah benteng Fort Rotterdam.'
-  },
-  {
-    id: 13,
-    title: 'SYNTHWAVE NIGHT',
-    date: '2026-05-05',
-    day: '05',
-    month: 'MEI',
-    year: '2026',
-    location: 'Semarang',
-    venue: 'Old Town Hall, Semarang',
-    address: 'Jl. Letjen Suprapto No. 31, Kota Lama, Semarang',
-    time: '20:00 - 23:00 WIB (Doors open 19:00 WIB)',
-    image: noiseImg,
-    category: 'LIVE HOUSE',
-    price: 95000,
-    desc: 'Hanyutkan diri Anda dalam gemerlap lampu neon, ketukan drum mesin retro, dan petualangan melodi synthesizer futuristik 80-an di tengah arsitektur kolonial Kota Lama.'
-  },
-  {
-    id: 14,
-    title: 'SUMMER BLAST 2026',
-    date: '2026-04-12',
-    day: '12',
-    month: 'APR',
-    year: '2026',
-    location: 'Medan',
-    venue: 'Lapangan Benteng, Medan',
-    address: 'Jl. Pengadilan, Petisah Tengah, Medan, Sumatera Utara',
-    time: '14:00 - 22:00 WIB (Doors open 13:00 WIB)',
-    image: southSideImg,
-    category: 'FESTIVAL',
-    price: 210000,
-    desc: 'Festival musim panas termegah di Medan. Panggung megah, jajaran kuliner lokal andalan, instalasi seni interaktif, dan penampilan heboh dari band pop-rock papan atas.'
-  },
-  {
-    id: 15,
-    title: 'ACOUSTIC SESSION',
-    date: '2026-03-25',
-    day: '25',
-    month: 'MAR',
-    year: '2026',
-    location: 'Solo',
-    venue: 'Taman Balekambang, Solo',
-    address: 'Jl. Ahmad Yani, Surakarta, Jawa Tengah',
-    time: '19:30 - 21:30 WIB (Doors open 18:30 WIB)',
-    image: undercityImg,
-    category: 'CONCERT',
-    price: 80000,
-    desc: 'Petikan dawai gitar akustik berpadu dengan ketukan perkusi santai menciptakan malam akustik intim yang menenangkan di bawah terangnya rembulan Kota Solo.'
-  },
-  {
-    id: 16,
-    title: 'POST-ROCK VISIONS',
-    date: '2026-02-10',
-    day: '10',
-    month: 'PEB',
-    year: '2026',
-    location: 'Bandung',
-    venue: 'Dago Tea House, Bandung',
-    address: 'Jl. Bukit Dago Utara No. 53, Coblong, Bandung',
-    time: '19:00 - 23:00 WIB (Doors open 18:00 WIB)',
-    image: noiseImg,
-    category: 'UNDERGROUND',
-    price: 115000,
-    desc: 'Perjalanan musikal instrumental tanpa batas. Panggung penuh visual sinematik magis, melodi gitar delay berlapis, dan klimaks emosi membuncah khas musik post-rock.'
-  }
-]
-
 // Current date benchmark for filtering past vs upcoming
 const BENCHMARK_DATE = '2026-05-24'
 
@@ -477,8 +217,14 @@ const getTicketDesc = (eventTitle, tierId) => {
   }
 }
 
+onMounted(() => {
+  fetchEvents()
+  document.addEventListener('click', closeShareDropdown)
+})
+
 onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval)
+  document.removeEventListener('click', closeShareDropdown)
 })
 
 // Find current event details
@@ -558,7 +304,8 @@ const fetchEventDetail = async () => {
 }
 
 const currentEvent = computed(() => {
-  return fetchedEvent.value || events[0]
+  const list = events.value || []
+  return fetchedEvent.value || list.find(e => e.id === props.eventId) || list[0] || {}
 })
 
 const isPastEvent = computed(() => {
@@ -689,6 +436,28 @@ const toggleBottomSheet = () => {
 const isSaved = ref(false)
 const toggleSave = () => {
   isSaved.value = !isSaved.value
+}
+
+// Share Dropdown state
+const isShareDropdownOpen = ref(false)
+const whatsappShareUrl = computed(() => {
+  const text = encodeURIComponent(
+    currentLang.value === 'id'
+      ? `Hei! Cek event keren ini: ${currentEvent.value.title} di ${window.location.href}`
+      : `Hey! Check out this awesome event: ${currentEvent.value.title} at ${window.location.href}`
+  )
+  return `https://api.whatsapp.com/send?text=${text}`
+})
+
+const handleCopyLink = () => {
+  copyLink()
+  isShareDropdownOpen.value = false
+}
+
+const closeShareDropdown = (e) => {
+  if (!e.target.closest('.share-dropdown-wrapper')) {
+    isShareDropdownOpen.value = false
+  }
 }
 
 // Action button triggers
@@ -1239,20 +1008,6 @@ const toggleTicketTier = (tier) => {
                     <span class="price-amount">Rp {{ formatPrice(startingPrice) }}</span>
                   </div>
 
-                  <!-- Call to Actions -->
-                  <div class="sidebar-buttons-group">
-                    <transition name="fade-slide">
-                      <button 
-                        class="btn-primary-checkout" 
-                        @click="scrollToTickets"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span>{{ t('lihatTiket') }}</span>
-                      </button>
-                    </transition>
-
                     <div class="secondary-actions-row">
                       <button class="btn-secondary-chat" @click="handleChatPenyelenggara">
                         <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1261,14 +1016,31 @@ const toggleTicketTier = (tier) => {
                         <span>{{ t('chat') }}</span>
                       </button>
                       
-                      <button class="btn-secondary-save-half" @click="toggleSave">
-                        <svg class="btn-icon" :class="{ 'is-saved': isSaved }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                        </svg>
-                        <span>{{ isSaved ? (currentLang === 'id' ? 'TERSIMPAN' : 'SAVED') : (currentLang === 'id' ? 'SIMPAN' : 'SAVE') }}</span>
-                      </button>
+                      <!-- Share Dropdown Button -->
+                      <div class="share-dropdown-wrapper">
+                        <button class="btn-secondary-share-icon" @click.stop="isShareDropdownOpen = !isShareDropdownOpen" aria-label="Share">
+                          <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742l4.632-2.518m0 7.518l-4.632-2.518m8.684-2.812A2.5 2.5 0 1115 15a2.5 2.5 0 011.842-.742zM7.5 12a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                        </button>
+                        <transition name="fade-slide">
+                          <div v-if="isShareDropdownOpen" class="share-dropdown-menu">
+                            <button @click="handleCopyLink" class="share-dropdown-item">
+                              <svg class="dropdown-item-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                              </svg>
+                              <span>{{ currentLang === 'id' ? 'Salin Tautan' : 'Copy Link' }}</span>
+                            </button>
+                            <a :href="whatsappShareUrl" target="_blank" @click="isShareDropdownOpen = false" class="share-dropdown-item">
+                              <svg class="dropdown-item-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.62.963 3.41 1.472 5.358 1.473 5.485.002 9.948-4.468 9.95-9.96.001-2.66-1.037-5.163-2.92-7.05-1.884-1.889-4.387-2.93-7.054-2.932-5.489 0-9.956 4.462-9.959 9.95-.001 1.83.479 3.619 1.39 5.215L2.392 21.66l6.255-1.642zm9.961-6.732c-.324-.162-1.92-.949-2.217-1.058-.297-.108-.513-.162-.73.162-.216.324-.838 1.058-1.027 1.274-.19.216-.378.243-.702.081-.324-.162-1.37-.505-2.61-1.611-.963-.859-1.613-1.921-1.802-2.246-.19-.324-.02-.5-.181-.661-.146-.146-.324-.378-.486-.568-.162-.19-.216-.324-.324-.541-.108-.216-.055-.405-.027-.567.027-.162.216-.513.324-.676.108-.162.162-.27.243-.459.081-.189.041-.351-.014-.513-.054-.162-.513-1.243-.703-1.702-.186-.445-.373-.385-.513-.392-.132-.007-.284-.008-.436-.008-.152 0-.401.057-.611.286-.21.23-.8.784-.8 1.91 0 1.126.82 2.215.933 2.368.113.152 1.612 2.463 3.908 3.45.546.235.973.376 1.306.481.549.174 1.049.15 1.444.09.44-.067 1.92-.784 2.19-1.541.27-.756.27-1.405.189-1.541-.081-.136-.297-.216-.622-.378z"/>
+                              </svg>
+                              <span>WhatsApp</span>
+                            </a>
+                          </div>
+                        </transition>
+                      </div>
                     </div>
-                  </div>
                 </div>
 
               </div>
@@ -1557,7 +1329,7 @@ const toggleTicketTier = (tier) => {
   border-radius: 0;
   overflow: hidden;
   padding: 6rem 10% 5rem 10%;
-  margin-bottom: 4rem;
+  margin-bottom: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   text-align: left;
@@ -1634,7 +1406,7 @@ const toggleTicketTier = (tier) => {
 
 .hero-title-left {
   font-family: var(--font-heading);
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
@@ -2367,7 +2139,7 @@ const toggleTicketTier = (tier) => {
   display: flex;
   gap: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 0.2rem;
 }
 
@@ -2470,28 +2242,71 @@ const toggleTicketTier = (tier) => {
   background-color: rgba(255, 255, 255, 0.02);
 }
 
-.btn-secondary-save-half {
-  flex: 1;
+.share-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.btn-secondary-share-icon {
   background-color: transparent;
   color: #FFFFFF;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 1rem;
-  font-weight: 800;
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  padding: 1rem 0;
+  width: 3.2rem;
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   transition: all 0.25s ease;
+  flex-shrink: 0;
 }
 
-.btn-secondary-save-half:hover {
+.btn-secondary-share-icon:hover {
   border-color: #FFFFFF;
   background-color: rgba(255, 255, 255, 0.02);
+}
+
+.share-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background-color: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  min-width: 160px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+  overflow: hidden;
+}
+
+.share-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.share-dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-item-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .checkout-actions-main {
@@ -3565,7 +3380,7 @@ const toggleTicketTier = (tier) => {
   }
 
   .hero-title-left {
-    font-size: 1.6rem;
+    font-size: 1.25rem;
   }
 
   .hero-main-split {

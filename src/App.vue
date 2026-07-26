@@ -6,6 +6,7 @@ import MerchSection from './components/MerchSection.vue'
 import MarqueeSection from './components/MarqueeSection.vue'
 import EventsSection from './components/EventsSection.vue'
 import MerchPage from './components/MerchPage.vue'
+import MerchDetailPage from './components/MerchDetailPage.vue'
 import EventsPage from './components/EventsPage.vue'
 import EventDetailPage from './components/EventDetailPage.vue'
 import TransactionEvent from './components/TransactionEvent.vue'
@@ -14,10 +15,14 @@ import Footer from './components/Footer.vue'
 import MobileBottomNav from './components/MobileBottomNav.vue'
 
 const currentRoute = ref(window.location.hash)
-const selectedEventSlug = ref('')
+const selectedEventId = ref(1)
 
 const isEventDetail = computed(() => {
   return currentRoute.value && currentRoute.value.startsWith('#event-detail-')
+})
+
+const isMerchDetail = computed(() => {
+  return currentRoute.value && (currentRoute.value.startsWith('#merch-detail-') || currentRoute.value.startsWith('#product-detail-'))
 })
 
 const getEventSlugFromHash = (hash) => {
@@ -27,11 +32,24 @@ const getEventSlugFromHash = (hash) => {
   return ''
 }
 
+const getProductIdFromHash = (hash) => {
+  if (hash.startsWith('#merch-detail-')) {
+    return parseInt(hash.replace('#merch-detail-', '')) || 1
+  }
+  if (hash.startsWith('#product-detail-')) {
+    return parseInt(hash.replace('#product-detail-', '')) || 1
+  }
+  return 1
+}
+
 onMounted(() => {
   window.addEventListener('hashchange', () => {
     currentRoute.value = window.location.hash
     if (window.location.hash.startsWith('#event-detail-')) {
       selectedEventSlug.value = getEventSlugFromHash(window.location.hash)
+    }
+    if (window.location.hash.startsWith('#merch-detail-') || window.location.hash.startsWith('#product-detail-')) {
+      selectedProductId.value = getProductIdFromHash(window.location.hash)
     }
     window.scrollTo({ top: 0, behavior: 'instant' })
   })
@@ -39,6 +57,9 @@ onMounted(() => {
   const initialHash = window.location.hash
   if (initialHash.startsWith('#event-detail-')) {
     selectedEventSlug.value = getEventSlugFromHash(initialHash)
+  }
+  if (initialHash.startsWith('#merch-detail-') || initialHash.startsWith('#product-detail-')) {
+    selectedProductId.value = getProductIdFromHash(initialHash)
   }
 })
 </script>
@@ -56,8 +77,8 @@ onMounted(() => {
       <div v-if="currentRoute === '#merch-page'">
         <MerchPage />
       </div>
-      <div v-else-if="currentRoute === '#events-page'">
-        <EventsPage />
+      <div v-else-if="isMerchDetail">
+        <MerchDetailPage :productId="selectedProductId" />
       </div>
       <div v-else-if="currentRoute === '#transaction-event'">
         <TransactionEvent />

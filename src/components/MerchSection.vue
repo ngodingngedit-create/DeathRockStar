@@ -1,59 +1,15 @@
 <script setup>
-import { ref } from 'vue'
-import { addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
+import { ref, computed, onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { cartItems, addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
+import { products, fetchProducts } from '../store/apiStore.js'
 
-// Import local image assets
-import teeImg from '../assets/images/merch_tee.png'
-import hoodieImg from '../assets/images/merch_hoodie.png'
-import capImg from '../assets/images/merch_cap.png'
-import bagImg from '../assets/images/merch_bag.png'
-
-// Import newly copied detail images for the gallery
-import teeLogoDetail from '../assets/images/tee_detail_logo.png'
-import teeLabelDetail from '../assets/images/tee_detail_label.png'
-import teeFabricDetail from '../assets/images/tee_detail_fabric.png'
-
-const products = ref([])
-
-import { onMounted } from 'vue'
-
-onMounted(async () => {
-  try {
-    const response = await fetch('https://api.kolektix.my.id/api/product?creator_id=48')
-    const result = await response.json()
-    if (result.data) {
-      products.value = result.data.map(p => {
-        const varians = p.product_varian || []
-        const stock = varians.reduce((acc, v) => acc + (v.stock_qty || 0), 0) || p.qty || 0
-        const sizes = varians.length > 0 ? varians.map(v => v.varian_name) : ['One Size']
-        const priceNum = varians[0]?.price || p.price || 0
-        
-        return {
-          id: p.id,
-          slug: p.slug,
-          name: p.product_name,
-          price: 'Rp ' + Number(priceNum).toLocaleString('id-ID'),
-          image: p.product_image && p.product_image.length > 0 ? p.product_image[0].image_url : '',
-          category: p.product_category_id ? 'Category' : 'T-Shirt',
-          description: p.description,
-          stock: stock,
-          label: p.product_status_id === 2 ? 'BEST SELLER' : '',
-          sizes: sizes,
-          colors: [{ name: 'Default', hex: '#000000' }], // fallback color as it's not in API
-          images: p.product_image?.map(img => img.image_url) || [],
-          creatorName: p.has_creator?.name || p.creator?.name || 'mocca',
-          creatorImage: p.has_creator?.image_url || p.creator?.image_url || '/logo_mocca.png',
-          weight: varians.length > 0 ? varians[0].weight : p.weight,
-          variant_id: varians.length > 0 ? varians[0].id : null,
-          product_id: p.id
-        }
-      })
-    }
-  } catch (error) {
-    console.error('Error fetching products:', error)
+onMounted(() => {
+  if (products.value.length === 0) {
+    fetchProducts()
   }
 })
+
 const translateLabel = (label) => {
   if (!label) return ''
   const key = label.toLowerCase().replace(' ', '').replace('-', '')
@@ -67,7 +23,7 @@ const translateLabel = (label) => {
   return t(storeKey)
 }
 
-// Modal State
+// Modal State (for quick view if needed)
 const selectedProduct = ref(null)
 const activeImgIndex = ref(0)
 const selectedSize = ref('M')
@@ -75,72 +31,24 @@ const selectedColor = ref('Pure Black')
 const selectedQuantity = ref(0)
 const isZoomed = ref(false)
 
-// Toast State
-const toastMsg = ref('')
-const toastType = ref('success') // success, error
-const showToast = ref(false)
-let toastTimeout = null
-
-const triggerToast = (msg, type = 'success') => {
-  toastMsg.value = msg
-  toastType.value = type
-  showToast.value = true
-  if (toastTimeout) clearTimeout(toastTimeout)
-  toastTimeout = setTimeout(() => {
-    showToast.value = false
-  }, 3000)
-}
-
-const openQuickView = async (product) => {
-  // Set basic data first for fast UI reaction
-  selectedProduct.value = { ...product }
-  activeImgIndex.value = 0
-  selectedSize.value = product.sizes && product.sizes.length > 0 && product.sizes[0] === 'One Size' ? 'One Size' : ''
-  selectedColor.value = product.colors && product.colors.length > 0 ? product.colors[0]?.name : ''
-  selectedQuantity.value = 0
-  isZoomed.value = false
-  document.body.style.overflow = 'hidden'
-
-  if (product.slug) {
-    try {
-      const response = await fetch(`https://api.kolektix.my.id/api/product/${product.slug}`)
-      const result = await response.json()
-      const detail = result.data
-      
-      const varians = detail.productVarian || detail.product_varian || []
-      
-      let totalStock = 0
-      if (varians.length > 0) {
-        totalStock = varians.reduce((acc, v) => acc + (v.stock_summary?.sisa_stock ?? v.stock_qty ?? 0), 0)
-      } else {
-        totalStock = detail.qty || 0
-      }
-
-      const sizes = varians.map(v => v.varian_name)
-      
-      selectedProduct.value = {
-        ...product,
-        description: detail.description,
-        stock: totalStock,
-        sizes: sizes.length > 0 ? sizes : ['One Size'],
-        price: 'Rp ' + Number(varians[0]?.price || detail.price || 0).toLocaleString('id-ID'),
-        images: detail.product_image?.map(img => img.image_url) || [product.image],
-        varians: varians, // store varians to select size later
-        admin_fee: detail.admin_fee || 0,
-        weight: varians.length > 0 ? varians[0].weight : (detail.weight || 0),
-        variant_id: varians.length > 0 ? varians[0].id : null,
-        product_id: detail.id || product.id
-      }
-
-      selectedSize.value = selectedProduct.value.sizes[0] === 'One Size' ? 'One Size' : ''
-      selectedQuantity.value = getVariantQuantity(product.id, selectedSize.value, selectedColor.value)
-      
-    } catch (error) {
-      console.error('Error fetching product detail:', error)
+const currentStock = computed(() => {
+  if (!selectedProduct.value) return 0
+  const varians = selectedProduct.value.varians || []
+  if (varians.length > 0) {
+    const match = varians.find(v => {
+      const matchSize = !selectedSize.value || v.size === selectedSize.value || v.name === selectedSize.value
+      const matchColor = !v.color || !selectedColor.value || v.color === selectedColor.value
+      return matchSize && matchColor
+    })
+    if (match) {
+      return match.stock
     }
-  } else {
-    selectedQuantity.value = getVariantQuantity(product.id, selectedSize.value, selectedColor.value)
   }
+  return selectedProduct.value.stock || 0
+})
+
+const openQuickView = (product) => {
+  window.location.hash = `#merch-detail-${product.id}`
 }
 
 const closeQuickView = () => {
@@ -167,15 +75,6 @@ const selectThumbnail = (index) => {
 const selectSize = (size) => {
   selectedSize.value = size
   updateModalQuantity()
-  if (selectedProduct.value && selectedProduct.value.varians) {
-    const v = selectedProduct.value.varians.find(v => v.varian_name === size)
-    if (v) {
-      selectedProduct.value.stock = v.stock_summary?.sisa_stock ?? v.stock_qty ?? 0
-      selectedProduct.value.price = 'Rp ' + Number(v.price || 0).toLocaleString('id-ID')
-      selectedProduct.value.variant_id = v.id
-      selectedProduct.value.weight = v.weight || 0
-    }
-  }
 }
 
 const selectColor = (colorName) => {
@@ -185,15 +84,20 @@ const selectColor = (colorName) => {
 
 const updateModalQuantity = () => {
   if (!selectedProduct.value) return
-  selectedQuantity.value = getVariantQuantity(selectedProduct.value.id, selectedSize.value, selectedColor.value)
+  const cartQty = getVariantQuantity(selectedProduct.value.id, selectedSize.value, selectedColor.value)
+  if (cartQty > 0) {
+    selectedQuantity.value = Math.min(cartQty, currentStock.value)
+  } else if (currentStock.value > 0) {
+    selectedQuantity.value = 1
+  } else {
+    selectedQuantity.value = 0
+  }
 }
 
 const incrementQty = () => {
-  if (!selectedSize.value) {
-    triggerToast(currentLang.value === 'id' ? 'Silakan pilih ukuran terlebih dahulu' : 'Please select a size first', 'error')
-    return
+  if (selectedQuantity.value < currentStock.value) {
+    selectedQuantity.value++
   }
-  selectedQuantity.value++
 }
 
 const decrementQty = () => {
@@ -203,9 +107,8 @@ const decrementQty = () => {
 }
 
 const handleAddToCart = () => {
-  if (!selectedProduct.value || selectedQuantity.value === 0) return
+  if (!selectedProduct.value || currentStock.value <= 0 || selectedQuantity.value <= 0) return
   setCartItemQuantity(selectedProduct.value, selectedSize.value, selectedColor.value, selectedQuantity.value)
-  triggerToast(currentLang.value === 'id' ? 'Produk berhasil ditambahkan ke keranjang!' : 'Product added to cart successfully!', 'success')
   closeQuickView()
 }
 
@@ -215,7 +118,16 @@ const handleChat = () => {
     : `Connecting to store manager about ${selectedProduct.value.name}...`)
 }
 
+const isSizeGuideOpen = ref(false)
+const defaultSizeChart = 'https://api.kolektix.com/storage/uploads/products/product_6a21cabdaeaee.jpeg'
 
+const openSizeGuide = () => {
+  isSizeGuideOpen.value = true
+}
+
+const closeSizeGuide = () => {
+  isSizeGuideOpen.value = false
+}
 </script>
 
 <template>
@@ -249,21 +161,20 @@ const handleChat = () => {
               {{ translateLabel(product.label) }}
             </span>
             <img :src="product.image" :alt="product.name" class="product-image" />
-            <div class="product-overlay">
-              <button 
-                class="quick-add-btn" 
-                :class="{ 'disabled-btn': product.stock <= 0 }"
-                :disabled="product.stock <= 0"
-                @click.stop="addItem(product)"
-              >
-                <span>{{ product.stock > 0 ? t('quickAdd') : t('soldOut') }}</span>
-                <svg v-if="product.stock > 0" class="plus-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            </div>
+            <!-- Pilih Varian button overlay -->
+            <button 
+              class="quick-add-btn" 
+              :class="{ 'disabled-btn': product.stock <= 0 }"
+              :disabled="product.stock <= 0"
+              @click.stop="openQuickView(product)"
+            >
+              <svg class="cart-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+              </svg>
+              <span>{{ product.stock > 0 ? (currentLang === 'id' ? 'Pilih Varian' : 'Select Variant') : t('soldOut') }}</span>
+            </button>
           </div>
- 
+
           <!-- Product Details -->
           <div class="product-details">
             <!-- Name -->
@@ -274,41 +185,38 @@ const handleChat = () => {
               <p class="product-price">{{ product.price }}</p>
             </div>
             
-            <!-- Quantity controls (below price, aligned right) -->
-            <div class="quantity-row">
-              <div class="quantity-controls" @click.stop>
-                <button 
-                  class="qty-btn minus" 
-                  @click="decrementItem(product.id)"
-                  :disabled="getItemQuantity(product.id) === 0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4" />
-                  </svg>
-                </button>
-                <span class="qty-value">{{ getItemQuantity(product.id) }}</span>
-                <button 
-                  class="qty-btn plus" 
-                  @click="addItem(product)"
-                  :disabled="product.stock <= 0 || getItemQuantity(product.id) >= product.stock"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
+            <!-- Rating & Sold Count -->
+            <div class="product-rating-row">
+              <span class="star-icon">⭐</span>
+              <span class="rating-val">{{ product.rating || '4.8' }}</span>
+              <span class="divider-bullet">•</span>
+              <span class="sold-count">{{ product.soldCount || '100+' }} {{ currentLang === 'id' ? 'terjual' : 'sold' }}</span>
             </div>
 
-            <!-- Divider Line -->
-            <div class="product-divider"></div>
+            <!-- Location -->
+            <div class="product-location-row">
+              <svg class="pin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              <span class="location-text">{{ product.location || 'Warehouse Kita' }}</span>
+            </div>
 
-            <!-- Creator Section (below divider, aligned left) -->
-            <div class="product-details-bottom">
-              <div class="partner-store">
-                <img :src="product.creatorImage" :alt="product.creatorName + ' Logo'" class="partner-logo" />
-                <div class="partner-info">
-                  <span class="partner-label">{{ t('partnerStore') }}</span>
-                  <span class="partner-name">{{ product.creatorName }}</span>
+            <!-- Divider -->
+            <div class="product-card-divider"></div>
+
+            <!-- Seller Info -->
+            <div class="product-seller-row">
+              <div class="seller-avatar">
+                <img v-if="product.sellerAvatar" :src="product.sellerAvatar" :alt="product.sellerName" class="seller-avatar-img" />
+                <span v-else class="seller-k">k</span>
+              </div>
+              <div class="seller-info-text">
+                <span class="provided-by">{{ currentLang === 'id' ? 'Disediakan oleh' : 'Provided by' }}</span>
+                <div class="seller-name-row">
+                  <span class="seller-name">{{ product.sellerName || 'moofeet' }}</span>
+                  <svg class="verified-badge-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0D5EF4">
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
                 </div>
               </div>
             </div>
@@ -389,7 +297,7 @@ const handleChat = () => {
                 <p class="qv-price">{{ selectedProduct.price }}</p>
 
                 <!-- Description -->
-                <div class="qv-body-text qv-header-desc" v-html="selectedProduct.description[currentLang] || selectedProduct.description"></div>
+                <p class="qv-body-text qv-header-desc">{{ selectedProduct.description[currentLang] || selectedProduct.description }}</p>
               </div>
 
               <!-- Variants Selectors -->
@@ -398,6 +306,15 @@ const handleChat = () => {
                 <div class="qv-variant-group">
                   <div class="qv-variant-header">
                     <h4 class="qv-section-title">{{ t('size') }}</h4>
+                    <button class="qv-size-guide-btn" @click.stop="openSizeGuide">
+                      <svg class="ruler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 21H3V3l18 18Z"/>
+                        <path d="M8 21v-3"/>
+                        <path d="M12 21v-3"/>
+                        <path d="M16 21v-3"/>
+                      </svg>
+                      <span>{{ t('sizeGuide') }}</span>
+                    </button>
                   </div>
                   <div class="qv-size-chips">
                     <button 
@@ -412,8 +329,6 @@ const handleChat = () => {
                   </div>
                 </div>
 
-
-
                 <!-- Quantity Selector -->
                 <div class="qv-variant-group">
                   <h4 class="qv-section-title">{{ t('quantity') }}</h4>
@@ -421,14 +336,14 @@ const handleChat = () => {
                     <div class="qv-qty-stepper">
                       <button class="qv-qty-btn" @click.stop="decrementQty" :disabled="selectedQuantity <= 0">-</button>
                       <span class="qv-qty-val">{{ selectedQuantity }}</span>
-                      <button class="qv-qty-btn" @click.stop="incrementQty">+</button>
+                      <button class="qv-qty-btn" @click.stop="incrementQty" :disabled="selectedQuantity >= currentStock">+</button>
                     </div>
 
                     <!-- Stock Badge Pill -->
-                    <div class="qv-stock-badge-pill" :class="{ 'sold-out': selectedProduct.stock <= 0 }">
+                    <div class="qv-stock-badge-pill" :class="{ 'sold-out': currentStock <= 0 }">
                       <span class="stock-dot"></span>
                       <span class="stock-text">
-                        {{ selectedProduct.stock > 0 ? `${t('availableStock')} (${selectedProduct.stock})` : t('outOfStock') }}
+                        {{ currentStock > 0 ? `${t('availableStock')} (${currentStock})` : t('outOfStock') }}
                       </span>
                     </div>
                   </div>
@@ -439,19 +354,24 @@ const handleChat = () => {
               <div class="qv-actions desktop-actions">
                 <button 
                   class="qv-btn-primary" 
-                  :disabled="selectedProduct.stock <= 0 || selectedQuantity <= 0"
-                  :class="{ 'btn-sold-out': selectedProduct.stock <= 0 || selectedQuantity <= 0 }"
+                  :disabled="currentStock <= 0 || selectedQuantity <= 0"
+                  :class="{ 'btn-sold-out': currentStock <= 0 || selectedQuantity <= 0 }"
                   @click.stop="handleAddToCart"
                 >
-                  <svg v-if="selectedProduct.stock > 0" class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg v-if="currentStock > 0 && selectedQuantity > 0" class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   <svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
-                  <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
+                  <span>{{ currentStock > 0 ? t('addToCart') : t('soldOut') }}</span>
                 </button>
-
+                <button class="qv-btn-secondary" @click.stop="handleChat">
+                  <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>{{ t('chat') }}</span>
+                </button>
               </div>
 
             </div>
@@ -461,82 +381,145 @@ const handleChat = () => {
           <div class="qv-actions mobile-actions">
             <button 
               class="qv-btn-primary" 
-              :disabled="selectedProduct.stock <= 0 || selectedQuantity <= 0"
-              :class="{ 'btn-sold-out': selectedProduct.stock <= 0 || selectedQuantity <= 0 }"
+              :disabled="currentStock <= 0 || selectedQuantity <= 0"
+              :class="{ 'btn-sold-out': currentStock <= 0 || selectedQuantity <= 0 }"
               @click.stop="handleAddToCart"
             >
-              <svg v-if="selectedProduct.stock > 0" class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg v-if="currentStock > 0 && selectedQuantity > 0" class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
-              <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
+              <span>{{ currentStock > 0 ? t('addToCart') : t('soldOut') }}</span>
             </button>
-
+            <button class="qv-btn-secondary" @click.stop="handleChat">
+              <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span>{{ t('chat') }}</span>
+            </button>
           </div>
 
         </div>
       </div>
     </transition>
 
-    <!-- Toast Notification -->
-    <transition name="toast-fade">
-      <div v-if="showToast" class="custom-toast" :class="toastType">
-        <svg v-if="toastType === 'success'" xmlns="http://www.w3.org/2000/svg" class="toast-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-        </svg>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" class="toast-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-        </svg>
-        <span>{{ toastMsg }}</span>
-      </div>
-    </transition>
+    <!-- Size Guide Image Modal Popup -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isSizeGuideOpen" class="size-guide-overlay" @click.self="closeSizeGuide">
+          <div class="size-guide-modal">
+            <div class="size-guide-header">
+              <h3>{{ currentLang === 'id' ? 'Panduan Ukuran' : 'Size Guide' }}</h3>
+              <button class="size-guide-close" @click="closeSizeGuide" aria-label="Close modal">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="size-guide-body">
+              <img 
+                :src="selectedProduct?.sizeChartImage || defaultSizeChart" 
+                alt="Panduan Ukuran / Size Guide" 
+                class="size-guide-img"
+              />
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </section>
 </template>
 
 <style scoped>
-/* Toast Notification */
-.custom-toast {
+/* Size Guide Modal Popup */
+.size-guide-overlay {
   position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 999999;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #fff;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  padding: 1.5rem;
 }
 
-.custom-toast.success {
-  background-color: #10b981;
+.size-guide-modal {
+  position: relative;
+  background-color: #121212;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  max-width: 650px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
 }
 
-.custom-toast.error {
-  background-color: #ef4444;
+.size-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #2a2a2a;
+  background-color: #181818;
 }
 
-.toast-icon {
+.size-guide-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.size-guide-close {
+  background: transparent;
+  border: none;
+  color: #a3a3a3;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.size-guide-close:hover {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.size-guide-close svg {
   width: 20px;
   height: 20px;
 }
 
-.toast-fade-enter-active,
-.toast-fade-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.size-guide-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0a0a0a;
 }
 
-.toast-fade-enter-from,
-.toast-fade-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 20px);
+.size-guide-img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 
 .merch-section {
@@ -571,7 +554,7 @@ const handleChat = () => {
 }
 
 .section-title {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.4rem, 2.8vw, 2.2rem);
   font-weight: 800;
   line-height: 1;
 }
@@ -608,18 +591,19 @@ const handleChat = () => {
 .product-card {
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  transition: var(--transition-smooth);
+  background-color: #1E1E1E;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .product-card:hover {
-  border-color: var(--border-color-hover);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* Product Image Wrapper */
@@ -681,46 +665,36 @@ const handleChat = () => {
   transform: scale(1.05);
 }
 
-/* Overlay & Quick Add Button */
-.product-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-smooth);
-}
-
-.product-card:hover .product-overlay {
-  opacity: 1;
-}
-
+/* Pilih Varian Button styling overlay inside image */
 .quick-add-btn {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  padding: 0.75rem 1.25rem;
+  background-color: #ffffff;
+  color: #000000;
+  padding: 0.65rem 1rem;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  transform: translateY(15px);
-  transition: var(--transition-smooth);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .product-card:hover .quick-add-btn {
+  opacity: 1;
   transform: translateY(0);
 }
 
 .quick-add-btn:hover {
   background-color: #e5e5e5;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
 
 .quick-add-btn:disabled,
@@ -728,47 +702,171 @@ const handleChat = () => {
   background-color: #333333 !important;
   color: #888888 !important;
   cursor: not-allowed !important;
-  border-color: #444444 !important;
   box-shadow: none !important;
+  opacity: 0.5 !important;
   transform: translateY(0) !important;
 }
 
-.plus-icon {
+.cart-icon {
   width: 14px;
   height: 14px;
+  fill: currentColor;
 }
 
 /* Product Details */
 .product-details {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.5rem;
   text-align: left;
+  background-color: #1E1E1E;
 }
 
 .product-name {
   font-family: var(--font-body);
   font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-primary);
+  font-weight: 500;
+  color: #FFFFFF;
   margin: 0;
+  text-transform: none;
+  line-height: 1.3;
 }
 
 .price-row {
   display: flex;
   justify-content: flex-end;
   width: 100%;
+  margin-top: 0.25rem;
 }
 
 .product-price {
   font-family: var(--font-body);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #FFFFFF;
   margin: 0;
   white-space: nowrap;
+}
+
+/* Rating, Location, and Seller styling */
+.product-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #A3A3A3;
+  margin-top: 0.35rem;
+}
+
+.star-icon {
+  font-size: 0.85rem;
+}
+
+.rating-val {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.divider-bullet {
+  color: #525252;
+}
+
+.product-location-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #A3A3A3;
+  margin-top: 0.35rem;
+}
+
+.pin-icon {
+  width: 12px;
+  height: 12px;
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.location-text {
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.product-card-divider {
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  margin: 0.75rem 0;
+  width: 100%;
+}
+
+.product-seller-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.seller-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #0D5EF4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(13, 94, 244, 0.2);
+  overflow: hidden;
+}
+
+.seller-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.seller-k {
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 1rem;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+.seller-info-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.provided-by {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #525252;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.seller-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 1px;
+}
+
+.seller-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.verified-badge-svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .quantity-row {
@@ -883,8 +981,8 @@ const handleChat = () => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.8);
   z-index: 1000;
   display: flex;
@@ -897,42 +995,45 @@ const handleChat = () => {
 .qv-modal {
   position: relative;
   width: 100%;
-  max-width: 1024px;
+  max-width: 960px;
   max-height: 90vh;
-  background-color: #121212;
-  border: 1px solid #2C2C2C;
-  border-radius: 8px;
+  background-color: #0e0e0e;
+  border: 1px solid #242424;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   color: #ffffff;
   overflow: hidden;
-  box-shadow: none; /* flat design */
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85);
 }
 
 /* Close Button */
 .qv-close-btn {
   position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  z-index: 10;
-  background: none;
-  border: none;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 20;
+  background: rgba(18, 18, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #a3a3a3;
   cursor: pointer;
-  padding: 0.25rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition-fast);
+  transition: all 0.2s ease;
 }
 
 .qv-close-btn:hover {
   color: #ffffff;
+  background: #262626;
 }
 
 .qv-close-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Split Content */
@@ -945,11 +1046,11 @@ const handleChat = () => {
 
 /* Left Column: Media Gallery */
 .qv-gallery {
-  width: 50%;
-  border-right: 1px solid #2C2C2C;
+  width: 48%;
+  border-right: 1px solid #222222;
   display: flex;
   flex-direction: column;
-  background-color: #0b0b0b;
+  background-color: #080808;
 }
 
 .qv-showcase {
@@ -959,9 +1060,10 @@ const handleChat = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0b0b0b;
+  background-color: #080808;
   overflow: hidden;
-  border-bottom: 1px solid #2C2C2C;
+  padding: 0;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 .qv-main-image {
@@ -984,19 +1086,20 @@ const handleChat = () => {
 /* Zoom icon button */
 .qv-zoom-btn {
   position: absolute;
-  top: 1rem;
-  left: 1rem;
+  bottom: 1.25rem;
+  right: 1.25rem;
   background: rgba(18, 18, 18, 0.85);
-  border: 1px solid #2C2C2C;
+  border: 1px solid #2a2a2a;
   color: #ffffff;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: var(--transition-fast);
+  z-index: 5;
 }
 
 .qv-zoom-btn:hover {
@@ -1015,17 +1118,18 @@ const handleChat = () => {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(18, 18, 18, 0.85);
-  border: 1px solid #2C2C2C;
+  background: rgba(18, 18, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
   width: 40px;
   height: 40px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: var(--transition-fast);
-  z-index: 2;
+  z-index: 5;
 }
 
 .qv-nav-btn:hover {
@@ -1049,53 +1153,54 @@ const handleChat = () => {
 
 /* Thumbnails */
 .qv-thumbnails {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0px;
-  background-color: #121212;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #080808;
 }
 
 .qv-thumb-btn {
-  background: none;
-  border: none;
+  background: #0d0d0d;
+  border: 1px solid #242424;
+  width: 64px;
+  height: 64px;
   aspect-ratio: 1 / 1;
   padding: 0;
   cursor: pointer;
   overflow: hidden;
-  border-right: 1px solid #2C2C2C;
+  border-radius: 8px;
   transition: var(--transition-fast);
-  opacity: 0.6;
-}
-
-.qv-thumb-btn:last-child {
-  border-right: none;
+  opacity: 0.65;
 }
 
 .qv-thumb-btn:hover {
-  opacity: 0.9;
+  opacity: 1;
+  border-color: #555555;
 }
 
 .qv-thumb-btn.active {
   opacity: 1;
-  outline: 2px solid #ffffff;
-  outline-offset: -2px;
+  border: 2px solid #ffffff;
+  outline: none;
 }
 
 .qv-thumb-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 0;
 }
 
 /* Right Column: Info */
 .qv-info {
-  width: 50%;
+  width: 52%;
   display: flex;
   flex-direction: column;
-  gap: 2.25rem;
+  gap: 1.75rem;
   overflow-y: auto;
-  padding: 2.5rem;
-  background-color: #121212;
+  padding: 2.5rem 3rem;
+  background-color: #0e0e0e;
   text-align: left;
 }
 
@@ -1105,11 +1210,11 @@ const handleChat = () => {
 }
 
 .qv-info::-webkit-scrollbar-track {
-  background: #121212;
+  background: #0e0e0e;
 }
 
 .qv-info::-webkit-scrollbar-thumb {
-  background: #2C2C2C;
+  background: #262626;
 }
 
 /* Header Content */
@@ -1122,36 +1227,39 @@ const handleChat = () => {
 .qv-tag {
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
-  color: #a3a3a3;
+  letter-spacing: 0.1em;
+  color: #737373;
   text-transform: uppercase;
 }
 
 .qv-title {
   font-family: var(--font-heading), 'Arial Black', sans-serif;
-  font-size: 28px;
+  font-size: 1.65rem;
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   color: #ffffff;
-  margin: 0;
+  margin: 0.25rem 0 0 0;
+  text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .qv-rating-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
 }
 
 .qv-stars {
-  color: #ffffff;
-  font-size: 0.85rem;
+  color: #eab308;
+  font-size: 0.9rem;
   letter-spacing: 0.05em;
 }
 
 .qv-reviews {
-  font-size: 0.75rem;
-  color: #a3a3a3;
+  font-size: 0.8rem;
+  color: #737373;
+  font-weight: 500;
 }
 
 .qv-price {
@@ -1159,10 +1267,8 @@ const handleChat = () => {
   font-size: 1.75rem;
   font-weight: 900;
   color: #ffffff;
-  margin: 0.5rem 0 0 0;
+  margin: 0.75rem 0 0 0;
 }
-
-
 
 /* Sections */
 .qv-section {
@@ -1174,7 +1280,7 @@ const handleChat = () => {
 .qv-section-title {
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: #ffffff;
   text-transform: uppercase;
   margin: 0;
@@ -1182,7 +1288,7 @@ const handleChat = () => {
 
 .qv-body-text {
   font-size: 0.875rem;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #a3a3a3;
   margin: 0;
 }
@@ -1199,10 +1305,10 @@ const handleChat = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #181818;
-  border: 1px solid #2C2C2C;
+  background-color: #121212;
+  border: 1px solid #262626;
   border-radius: 8px;
-  padding: 0.5rem 0.85rem;
+  padding: 0.55rem 1rem;
   transition: all 0.3s ease;
 }
 
@@ -1238,7 +1344,9 @@ const handleChat = () => {
 }
 
 .qv-header-desc {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #242424;
 }
 
 /* Variants */
@@ -1293,14 +1401,14 @@ const handleChat = () => {
 }
 
 .qv-size-chip {
-  background: none;
-  border: 1px solid #2C2C2C;
+  background: #0c0c0c;
+  border: 1px solid #2f2f2f;
   color: #a3a3a3;
   padding: 0.5rem 1rem;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
   min-width: 48px;
-  height: 38px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1318,35 +1426,7 @@ const handleChat = () => {
   background-color: #000000;
   border: 2px solid #ffffff;
   color: #ffffff;
-  font-weight: 800;
-}
-
-/* Color Swatches */
-.qv-color-swatches {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.qv-color-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.qv-color-swatch:hover {
-  transform: scale(1.08);
-}
-
-.qv-color-swatch.active {
-  outline: 2px solid #ffffff;
-  outline-offset: 3px;
-  border-color: transparent;
+  font-weight: 900;
 }
 
 .sr-only {
@@ -1368,9 +1448,12 @@ const handleChat = () => {
 .qv-qty-stepper {
   display: flex;
   align-items: center;
-  border: 1px solid #2C2C2C;
-  background-color: #0b0b0b;
+  border: 1px solid #2f2f2f;
+  background-color: #080808;
+  border-radius: 8px;
   width: fit-content;
+  height: 44px;
+  overflow: hidden;
 }
 
 .qv-qty-btn {
@@ -1378,8 +1461,8 @@ const handleChat = () => {
   border: none;
   color: #ffffff;
   width: 40px;
-  height: 40px;
-  font-size: 1rem;
+  height: 100%;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -1389,7 +1472,7 @@ const handleChat = () => {
 }
 
 .qv-qty-btn:hover:not(:disabled) {
-  background-color: #2C2C2C;
+  background-color: #242424;
 }
 
 .qv-qty-btn:disabled {
@@ -1399,8 +1482,8 @@ const handleChat = () => {
 
 .qv-qty-val {
   font-family: var(--font-body), sans-serif;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 800;
   color: #ffffff;
   width: 40px;
   text-align: center;
@@ -1414,27 +1497,29 @@ const handleChat = () => {
 }
 
 .qv-btn-primary {
-  flex: 1;
-  background-color: #e5e5e5;
+  flex: 1.4;
+  background-color: #ffffff;
   color: #000000;
   border: none;
-  padding: 1.25rem 2rem;
+  padding: 0.9rem 1.5rem;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.05em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   text-transform: uppercase;
-  border-radius: 0px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
 }
 
 .qv-btn-primary:hover {
-  background-color: #ffffff;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
+  background-color: #f2f2f2;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.25);
 }
 
 .qv-btn-primary.btn-sold-out {
@@ -1451,26 +1536,26 @@ const handleChat = () => {
 }
 
 .qv-btn-secondary {
-  background-color: transparent;
+  background-color: #121212;
   color: #ffffff;
-  border: 1px solid #2C2C2C;
-  padding: 1.25rem 2rem;
+  border: 1px solid #333333;
+  padding: 0.9rem 1.25rem;
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   text-transform: uppercase;
-  border-radius: 0px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: all 0.2s ease;
 }
 
 .qv-btn-secondary:hover {
   border-color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: #1a1a1a;
 }
 
 .btn-icon {

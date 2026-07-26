@@ -97,6 +97,7 @@ export const t = (key) => {
     noEvents: { id: 'Tidak ada event yang ditemukan dalam kategori ini.', en: 'No events found in this category.' },
     lihatTiket: { id: 'LIHAT TIKET', en: 'VIEW TICKET' },
     lihatLebihBanyak: { id: 'LIHAT LEBIH BANYAK', en: 'LOAD MORE' },
+    eventEnded: { id: 'Event Berakhir', en: 'Event Ended' },
 
     // Event Detail Page
     detailDesk: { id: 'DESKRIPSI', en: 'DESCRIPTION' },

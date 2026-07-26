@@ -1,64 +1,13 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { events, fetchEvents, isEventsLoading } from '../store/apiStore.js'
 
-// Initial events list (will be populated from API)
-const events = ref([])
-
-onMounted(async () => {
-  try {
-    const isProd = import.meta.env.PROD || window.location.hostname.includes('api.kolektix.com');
-    const baseUrl = isProd ? 'https://api.kolektix.com' : 'https://api.kolektix.my.id';
-    const creatorId = isProd ? 146 : 11;
-    
-    const res = await fetch(`${baseUrl}/api/event-by-creator/${creatorId}`);
-    const resData = await res.json();
-    
-    if (resData && resData.data && Array.isArray(resData.data)) {
-      events.value = resData.data.map(item => {
-        const dateObj = new Date(item.start_date || new Date());
-        const day = dateObj.getDate().toString().padStart(2, '0');
-        const monthMap = {
-          '01': 'JAN', '02': 'PEB', '03': 'MAR', '04': 'APR', '05': 'MEI', '06': 'JUN',
-          '07': 'JUL', '08': 'AGU', '09': 'SEP', '10': 'OKT', '11': 'NOV', '12': 'DES'
-        };
-        const monthKey = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-        const month = monthMap[monthKey] || 'JAN';
-        const year = dateObj.getFullYear().toString();
-        
-        let price = item.starting_price || 0;
-        if (item.has_event_ticket && item.has_event_ticket.length > 0) {
-          // find minimum price if there are multiple tickets, else just use the first
-          const validTickets = item.has_event_ticket.filter(t => t.price > 0);
-          if (validTickets.length > 0) {
-             price = Math.min(...validTickets.map(t => t.price));
-          } else {
-             price = item.has_event_ticket[0].price;
-          }
-        }
-        
-        return {
-          id: item.id,
-          slug: item.slug,
-          title: item.name,
-          date: item.start_date,
-          day: day,
-          month: month,
-          year: year,
-          location: item.location_city || item.location_name || 'Lokasi tidak diketahui',
-          venue: `${item.location_name}, ${item.location_city}`,
-          time: `${item.start_time ? item.start_time.substring(0, 5) : '00:00'} - ${item.end_time ? item.end_time.substring(0, 5) : '00:00'} ${item.zone_time || 'WIB'}`,
-          image: item.image_url,
-          category: item.has_event_format?.name?.toUpperCase() || 'EVENT',
-          price: price,
-          isFavorite: false
-        };
-      });
-    }
-  } catch (error) {
-    console.error('Failed to fetch events:', error);
+onMounted(() => {
+  if (events.value.length === 0) {
+    fetchEvents()
   }
-});
+})
 
 // Interactive state filters & search
 const activeCategoryTab = ref('ALL EVENTS') // 'ALL EVENTS', 'UPCOMING', 'PAST EVENTS'
@@ -108,7 +57,7 @@ watch(searchLocationQuery, () => {
 })
 
 const displayedEvents = computed(() => {
-  return isExpanded.value ? filteredEvents.value : filteredEvents.value.slice(0, 3)
+  return isExpanded.value ? filteredEvents.value : filteredEvents.value.slice(0, 4)
 })
 
 const changeTab = (tab) => {
@@ -245,9 +194,14 @@ const translateMonth = (m) => {
 
       <!-- Events Grid Cards -->
       <div class="events-grid">
-        <div v-for="event in displayedEvents" :key="event.id" class="grid-event-card">
+        <div v-for="event in displayedEvents" :key="event.id" class="grid-event-card" @click="navigateToDetail(event.id)">
           <!-- Poster Image -->
           <div class="card-image-wrapper">
+            <!-- Event Ended Badge -->
+            <div v-if="event.date < BENCHMARK_DATE" class="event-ended-badge">
+              {{ t('eventEnded') }}
+            </div>
+
             <!-- Favorite button on top absolute -->
             <button class="card-fav-btn" @click.stop="toggleFavorite(event)" :aria-label="event.isFavorite ? 'Unfavorite' : 'Favorite'">
               <svg 
@@ -269,57 +223,36 @@ const translateMonth = (m) => {
 
           <!-- Card Details -->
           <div class="card-details">
-            <!-- Category Badge & Location -->
-            <div class="card-badge-row">
-              <span class="card-badge">{{ event.category }}</span>
-              <span class="card-location">{{ translateLocation(event.location) }}</span>
-            </div>
-
             <!-- Title -->
             <h3 class="card-title">{{ event.title }}</h3>
 
-            <!-- Date below title -->
-            <div class="card-date-below">
-              <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <!-- Date Row -->
+            <div class="card-date-row">
+              <svg class="calendar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
               <span>{{ event.day }} {{ translateMonth(event.month) }} {{ event.year }}</span>
             </div>
 
-            <!-- Location -->
-            <div class="card-meta">
-              <svg class="meta-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>{{ translateVenue(event.venue) }}</span>
+            <!-- Price -->
+            <div class="card-price-row">
+              Rp{{ formatPrice(event.price) }}
             </div>
 
-            <!-- Price & Action -->
-            <div class="card-price-row">
-              <div class="price-box">
-                <span class="price-lbl">{{ t('mulaiDari') }}</span>
-                <span class="price-val">Rp {{ formatPrice(event.price) }}</span>
-              </div>
-              <!-- Active Ticket Link (Both Upcoming & Past) -->
-              <a 
-                :href="'#event-detail-' + event.slug" 
-                class="pilih-tiket-btn"
-                :class="{ 'past-event-btn': event.date < BENCHMARK_DATE }"
-                @click.prevent="navigateToDetail(event.slug)"
-              >
-                <span>{{ activeCategoryTab === 'UPCOMING' ? t('upcoming') : t('lihatTiket') }}</span>
-                <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                </svg>
-              </a>
+            <!-- Organizer Row -->
+            <div class="card-organizer-row">
+              <img :src="event.organizerLogo || '/logo/logo.png'" class="organizer-avatar" :alt="event.organizer || 'Death Rock Star'" />
+              <span class="organizer-name">{{ event.organizer || 'Death Rock Star' }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Load More Button -->
-      <div v-if="filteredEvents.length > 3 && !isExpanded" class="load-more-wrapper">
+      <div v-if="filteredEvents.length > 4 && !isExpanded" class="load-more-wrapper">
         <button class="load-more-btn" @click="isExpanded = true">
           <span>{{ t('lihatLebihBanyak') }}</span>
           <svg class="btn-arrow-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -519,38 +452,34 @@ const translateMonth = (m) => {
 /* ========================================== */
 .events-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
   margin-bottom: 4rem;
 }
 
 .grid-event-card {
   position: relative;
-  background-color: #141414;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: transparent;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
   overflow: hidden;
-  border-radius: 16px;
 }
 
-.grid-event-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.85);
+.grid-event-card:hover .card-image-wrapper {
+  transform: translateY(-4px);
 }
 
 .card-fav-btn {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 0.5rem;
+  left: 0.5rem;
   z-index: 10;
-  background: rgba(11, 11, 11, 0.8);
+  background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -570,8 +499,8 @@ const translateMonth = (m) => {
 }
 
 .heart-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   stroke: currentColor;
   fill: transparent;
   transition: fill 0.25s ease, stroke 0.25s ease;
@@ -582,21 +511,59 @@ const translateMonth = (m) => {
   stroke: #FF3B30 !important;
 }
 
+.event-ended-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #121212;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 5;
+}
+
 .card-image-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  background-color: #0B0B0B;
+  aspect-ratio: 2.2 / 1;
+  background-color: #141414;
   overflow: hidden;
-  border-radius: 16px 16px 0 0;
+  border-radius: 12px;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-image-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  transition: left 0.85s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.grid-event-card:hover .card-image-wrapper::after {
+  left: 150%;
 }
 
 .card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.9) contrast(1.05);
+  filter: brightness(0.9);
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -605,71 +572,38 @@ const translateMonth = (m) => {
 }
 
 .card-details {
-  padding: 1.5rem;
+  padding: 0.75rem 0 0 0;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   text-align: left;
 }
 
-.card-badge-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.card-badge {
-  display: inline-block;
-  padding: 3px 8px;
-  border: 1px solid #FFFFFF;
-  color: #FFFFFF;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  border-radius: 8px;
-}
-
-.card-location {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #8E8E8E;
-  text-transform: uppercase;
-}
-
 .card-title {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0 0 0.4rem 0;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.card-date-below {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #8E8E8E;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
+  color: #FFFFFF;
+  margin: 0 0 0.55rem 0;
+  line-height: 1.3;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
-.card-meta {
+.card-date-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   color: #8E8E8E;
-  margin-bottom: 1.5rem;
-  margin-top: auto;
+  margin-bottom: 0.55rem;
 }
 
-.meta-icon {
+.calendar-icon {
   width: 14px;
   height: 14px;
   color: #8E8E8E;
@@ -677,77 +611,34 @@ const translateMonth = (m) => {
 }
 
 .card-price-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 1rem;
-}
-
-.price-box {
-  display: flex;
-  flex-direction: column;
-}
-
-.price-lbl {
-  font-size: 0.65rem;
-  color: #8E8E8E;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.price-val {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #FFFFFF;
-  margin-top: 2px;
-}
-
-.pilih-tiket-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background-color: transparent;
-  color: #FFFFFF;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  text-transform: uppercase;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-  border-radius: 8px;
+  color: #FFFFFF;
+  margin-bottom: 0.85rem;
 }
 
-.pilih-tiket-btn:hover,
-.grid-event-card:hover .pilih-tiket-btn:not(.past-event-btn) {
-  background-color: #FFFFFF;
-  color: #000000;
-  border-color: #FFFFFF;
+.card-organizer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.pilih-tiket-btn.past-event-btn {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  color: #555555 !important;
-  cursor: pointer !important;
-  background-color: transparent !important;
+.organizer-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.pilih-tiket-btn.past-event-btn:hover {
-  background-color: transparent !important;
-  color: #555555 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.btn-arrow {
-  width: 12px;
-  height: 12px;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.grid-event-card:hover .pilih-tiket-btn .btn-arrow {
-  transform: translateX(4px);
+.organizer-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8E8E8E;
 }
 
 .empty-events-state {
@@ -808,7 +699,7 @@ const translateMonth = (m) => {
 @media (max-width: 1023px) {
   .events-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .events-hero {
@@ -876,7 +767,7 @@ const translateMonth = (m) => {
   /* Mobile grid card keeps the vertical card layout */
   .events-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 0.75rem;
   }
 
   .card-title {
