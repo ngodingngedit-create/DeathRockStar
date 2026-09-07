@@ -48,7 +48,7 @@ onMounted(() => {
     <!-- Overlay Noise Effect -->
     <div class="noise-overlay"></div>
 
-    <!-- Header / Navbar -->
+    <!-- Header / Navba -->
     <Navbar />
 
     <!-- Main Page Sections -->
