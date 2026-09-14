@@ -88,7 +88,7 @@ onMounted(() => {
     <Footer v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login' && currentRoute !== '#dashboard'" />
 
     <!-- Mobile Bottom Navigation (separate component, mobile-only) -->
-    <MobileBottomNav v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login' && currentRoute !== '#dashboard'" />
+    <MobileBottomNav v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login'" />
   </div>
 </template>
 

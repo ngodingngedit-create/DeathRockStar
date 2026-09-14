@@ -11,15 +11,7 @@ import {
 } from '../store/cart.js'
 import { currentLang, setLang, t } from '../store/lang.js'
 import { isLoggedIn, isAdmin, currentUser, logout } from '../store/auth.js'
-
-// Import assets for search results preview
-import noiseImg from '../assets/images/event_noise_parade.png'
-import southSideImg from '../assets/images/event_south_side.png'
-import undercityImg from '../assets/images/event_undercity.png'
-import teeImg from '../assets/images/merch_tee.png'
-import hoodieImg from '../assets/images/merch_hoodie.png'
-import capImg from '../assets/images/merch_cap.png'
-import bagImg from '../assets/images/merch_bag.png'
+import { useProductAutocomplete } from '../composables/useProductAutocomplete.js'
 
 const isMobileMenuOpen = ref(false)
 const isLangOpen = ref(false)
@@ -83,43 +75,19 @@ const selectLanguage = (lang) => {
   isLangOpen.value = false
 }
 
-const navLinks = computed(() => [
+const navLinks = computed(() => isAdmin.value ? [
   { name: t('home'), href: '#home' },
   { name: t('merch'), href: '#merch-page' },
-  // { name: t('events'), href: '#events-page' }
+  { name: 'DASHBOARD', href: '#dashboard' },
+] : [
+  { name: t('home'), href: '#home' },
+  { name: t('merch'), href: '#merch-page' },
 ])
 
-const searchEvents = [
-  { id: 1, slug: 'noise-parade-2026', title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
-  { id: 2, slug: 'south-side-fest', title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
-  { id: 3, slug: 'undercity-gigs', title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
-]
+const { results: merchResults, loading: merchLoading, search: searchMerch } = useProductAutocomplete()
+watch(searchQuery, (q) => searchMerch(q))
 
-const searchProducts = [
-  { id: 1, name: 'DRS LOGO TEE', price: 'Rp 149.000', category: 'Pakaian', image: teeImg },
-  { id: 2, name: 'DRS HOODIE', price: 'Rp 299.000', category: 'Pakaian', image: hoodieImg },
-  { id: 3, name: 'DRS CAP', price: 'Rp 129.000', category: 'Aksesoris', image: capImg },
-  { id: 4, name: 'DRS TOTE BAG', price: 'Rp 99.000', category: 'Aksesoris', image: bagImg }
-]
-
-const filteredSearchEvents = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const query = searchQuery.value.toLowerCase().trim()
-  return searchEvents.filter(e => 
-    e.title.toLowerCase().includes(query) || 
-    e.venue.toLowerCase().includes(query) || 
-    e.category.toLowerCase().includes(query)
-  )
-})
-
-const filteredSearchProducts = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const query = searchQuery.value.toLowerCase().trim()
-  return searchProducts.filter(p => 
-    p.name.toLowerCase().includes(query) || 
-    p.category.toLowerCase().includes(query)
-  )
-})
+const filteredSearchProducts = computed(() => merchResults.value)
 
 const currentHash = ref(window.location.hash || '#home')
 
@@ -480,30 +448,11 @@ onMounted(() => {
           <!-- Dynamic Search Results -->
           <div class="search-dropdown-results">
             <div v-if="searchQuery.trim().length > 0" class="search-dropdown-grid">
-              
-              <!-- Events Results -->
-              <div v-if="filteredSearchEvents.length > 0" class="search-dropdown-section">
-                <h4 class="results-section-title">{{ currentLang === 'id' ? 'EVENT MUSIK' : 'MUSIC EVENTS' }}</h4>
-                <div class="results-list-cards">
-                  <a 
-                    v-for="event in filteredSearchEvents" 
-                    :key="event.id" 
-                    :href="'#event-detail-' + event.slug"
-                    class="search-result-card"
-                    @click="isSearchOpen = false"
-                  >
-                    <div class="result-card-img" :style="{ backgroundImage: `url(${event.image})` }"></div>
-                    <div class="result-card-info">
-                      <span class="result-card-tag">{{ event.category }}</span>
-                      <h5 class="result-card-name">{{ event.title }}</h5>
-                      <span class="result-card-meta">{{ event.venue }}</span>
-                    </div>
-                  </a>
-                </div>
+              <div v-if="merchLoading" class="search-no-results">
+                <p>{{ currentLang === 'id' ? 'Mencari merch...' : 'Searching merch...' }}</p>
               </div>
-
               <!-- Products Results -->
-              <div v-if="filteredSearchProducts.length > 0" class="search-dropdown-section">
+              <div v-else-if="filteredSearchProducts.length > 0" class="search-dropdown-section">
                 <h4 class="results-section-title">MERCHANDISE</h4>
                 <div class="results-list-cards">
                   <a 
@@ -524,7 +473,7 @@ onMounted(() => {
               </div>
 
               <!-- No Results State -->
-              <div v-if="filteredSearchEvents.length === 0 && filteredSearchProducts.length === 0" class="search-no-results">
+              <div v-else class="search-no-results">
                 <p>{{ currentLang === 'id' ? 'Tidak ada hasil yang cocok.' : 'No matches found.' }}</p>
               </div>
 
@@ -1596,7 +1545,142 @@ onMounted(() => {
 @media (max-width: 992px) {
   .search-dropdown-bar {
     top: 65px;
-    max-height: calc(100vh - 65px - 75px); /* Leave room for mobile bottom nav (75px) */
+    max-height: calc(100vh - 65px - 75px);
+    padding: 0;
+  }
+
+  .search-dropdown-container {
+    max-width: 100%;
+    padding: 1rem 1rem 1.5rem;
+    gap: 1rem;
+  }
+
+  .search-capsule-wrapper {
+    padding: 0 0.5rem;
+  }
+
+  .search-capsule-input-container {
+    max-width: 100%;
+  }
+
+  .search-capsule-input {
+    padding: 0.7rem 2.5rem 0.7rem 2.75rem;
+    font-size: 0.85rem;
+  }
+
+  .search-capsule-icon {
+    left: 0.85rem;
+    width: 16px;
+    height: 16px;
+  }
+
+  .search-clear-btn {
+    right: 0.85rem;
+  }
+
+  .search-dropdown-grid {
+    gap: 1rem;
+  }
+
+  .results-section-title {
+    font-size: 0.68rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .results-list-cards {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .search-result-card {
+    padding: 0.6rem;
+    gap: 0.75rem;
+  }
+
+  .result-card-img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .result-card-img-tag {
+    width: 44px;
+    height: 44px;
+  }
+
+  .result-card-name {
+    font-size: 0.78rem;
+  }
+
+  .result-card-tag {
+    font-size: 0.55rem;
+  }
+
+  .result-card-meta {
+    font-size: 0.7rem;
+  }
+
+  .search-dropdown-suggestions {
+    gap: 0.75rem;
+  }
+
+  .suggestions-title {
+    font-size: 0.68rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .suggestions-tags {
+    gap: 0.5rem;
+  }
+
+  .suggestion-tag-btn {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-dropdown-container {
+    padding: 0.75rem 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .search-capsule-input {
+    padding: 0.6rem 2.2rem 0.6rem 2.5rem;
+    font-size: 0.8rem;
+  }
+
+  .search-capsule-icon {
+    left: 0.7rem;
+    width: 15px;
+    height: 15px;
+  }
+
+  .search-clear-btn {
+    right: 0.7rem;
+  }
+
+  .results-list-cards {
+    gap: 0.5rem;
+  }
+
+  .search-result-card {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .result-card-img,
+  .result-card-img-tag {
+    width: 38px;
+    height: 38px;
+  }
+
+  .result-card-name {
+    font-size: 0.72rem;
+  }
+
+  .suggestion-tag-btn {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.68rem;
   }
 }
 

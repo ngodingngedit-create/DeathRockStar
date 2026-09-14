@@ -1,17 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { currentLang } from '../store/lang.js'
-
-// Import assets for search results preview
-import noiseImg from '../assets/images/event_noise_parade.png'
-import southSideImg from '../assets/images/event_south_side.png'
-import undercityImg from '../assets/images/event_undercity.png'
-import teeImg from '../assets/images/merch_tee.png'
-import hoodieImg from '../assets/images/merch_hoodie.png'
-import capImg from '../assets/images/merch_cap.png'
-import bagImg from '../assets/images/merch_bag.png'
 import { t } from '../store/lang.js'
-import { computed } from 'vue'
+import { isAdmin } from '../store/auth.js'
+import { useProductAutocomplete } from '../composables/useProductAutocomplete.js'
 
 const currentHash = ref(window.location.hash || '#home')
 const isSearchOpen = ref(false)
@@ -43,39 +35,11 @@ const handleTabClick = (href) => {
   }
 }
 
-const searchEvents = [
-  { id: 1, slug: 'noise-parade-2026', title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
-  { id: 2, slug: 'south-side-fest', title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
-  { id: 3, slug: 'undercity-gigs', title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
-]
+const { results: merchResults, loading: merchLoading, search: searchMerch } = useProductAutocomplete()
+watch(searchQuery, (q) => searchMerch(q))
 
-const searchProducts = [
-  { id: 1, name: 'DRS LOGO TEE', price: 'Rp 149.000', category: 'Pakaian', image: teeImg },
-  { id: 2, name: 'DRS HOODIE', price: 'Rp 299.000', category: 'Pakaian', image: hoodieImg },
-  { id: 3, name: 'DRS CAP', price: 'Rp 129.000', category: 'Aksesoris', image: capImg },
-  { id: 4, name: 'DRS TOTE BAG', price: 'Rp 99.000', category: 'Aksesoris', image: bagImg }
-]
+const filteredSearchProducts = computed(() => merchResults.value)
 
-const filteredSearchEvents = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const query = searchQuery.value.toLowerCase().trim()
-  return searchEvents.filter(e =>
-    e.title.toLowerCase().includes(query) ||
-    e.venue.toLowerCase().includes(query) ||
-    e.category.toLowerCase().includes(query)
-  )
-})
-
-const filteredSearchProducts = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const query = searchQuery.value.toLowerCase().trim()
-  return searchProducts.filter(p =>
-    p.name.toLowerCase().includes(query) ||
-    p.category.toLowerCase().includes(query)
-  )
-})
-
-import { watch } from 'vue'
 watch(isSearchOpen, (open) => {
   if (open) {
     setTimeout(() => { searchInput.value?.focus() }, 100)
@@ -114,8 +78,44 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Beranda' : 'Home' }}</span>
       </a>
 
-      <!-- Koleksi (Collection) -->
+      <!-- Toko (Store) admin di urutan ke-2, user di urutan ke-3 -->
       <a
+        v-if="isAdmin"
+        href="#merch-page"
+        class="bottom-nav-item"
+        :class="{ 'active': isTabActive('#merch-page') }"
+        @click="handleTabClick('#merch-page')"
+      >
+        <div class="active-indicator"></div>
+        <div class="tab-icon-wrapper">
+          <svg class="tab-svg-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+        </div>
+        <span class="tab-label">{{ currentLang === 'id' ? 'Toko' : 'Store' }}</span>
+      </a>
+
+      <!-- Koleksi (user) / Dashboard (admin di urutan ke-3) -->
+      <a
+        v-if="isAdmin"
+        href="#dashboard"
+        class="bottom-nav-item"
+        :class="{ 'active': isTabActive('#dashboard') }"
+        @click="handleTabClick('#dashboard')"
+      >
+        <div class="active-indicator"></div>
+        <div class="tab-icon-wrapper">
+          <svg class="tab-svg-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </div>
+        <span class="tab-label">Dashboard</span>
+      </a>
+      <a
+        v-else
         href="#home"
         class="bottom-nav-item"
         :class="{ 'active': isTabActive('#merch') }"
@@ -133,27 +133,9 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Koleksi' : 'Collection' }}</span>
       </a>
 
-      <!-- Event -->
+      <!-- Toko (Store) user di urutan ke-3 -->
       <a
-        href="#events-page"
-        class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#events-page') }"
-        @click="handleTabClick('#events-page')"
-      >
-        <div class="active-indicator"></div>
-        <div class="tab-icon-wrapper">
-          <svg class="tab-svg-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-        </div>
-        <span class="tab-label">{{ currentLang === 'id' ? 'Event' : 'Events' }}</span>
-      </a>
-
-      <!-- Toko (Store) -->
-      <a
+        v-if="!isAdmin"
         href="#merch-page"
         class="bottom-nav-item"
         :class="{ 'active': isTabActive('#merch-page') }"
@@ -242,7 +224,10 @@ onMounted(() => {
           </div>
 
           <!-- Products -->
-          <div v-if="filteredSearchProducts.length > 0" class="msearch-section">
+          <div v-if="merchLoading" class="msearch-empty">
+            <p>{{ currentLang === 'id' ? 'Mencari merch...' : 'Searching merch...' }}</p>
+          </div>
+          <div v-else-if="filteredSearchProducts.length > 0" class="msearch-section">
             <h4 class="msearch-section-title">MERCHANDISE</h4>
             <div class="msearch-cards">
               <a
@@ -263,7 +248,7 @@ onMounted(() => {
           </div>
 
           <!-- No results -->
-          <div v-if="filteredSearchEvents.length === 0 && filteredSearchProducts.length === 0" class="msearch-empty">
+          <div v-else class="msearch-empty">
             <p>{{ currentLang === 'id' ? 'Tidak ada hasil yang cocok.' : 'No matches found.' }}</p>
           </div>
 
