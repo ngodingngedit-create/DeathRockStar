@@ -37,12 +37,11 @@ const flagLabel = computed(() => (currentLang.value === 'id' ? 'ID' : 'EN'))
   <div class="login-page">
     <div class="login-shell">
       <section class="login-brand">
-        <p class="brand-kicker">{{ t('loginBrandTag') }}</p>
+       
         <div class="brand-logo">
           <img src="/logo/logo.png" alt="Death Rock Star" />
           <span class="brand-word">DEATHROCKSTAR</span>
         </div>
-        <p class="brand-desc">{{ t('loginSubtitle') }}</p>
       </section>
 
       <section class="login-panel">
@@ -76,10 +75,9 @@ const flagLabel = computed(() => (currentLang.value === 'id' ? 'ID' : 'EN'))
 <style scoped>
 .login-page { min-height: 100vh; background: #000; color: #fff; display: flex; font-family: var(--font-body); }
 .login-shell { display: grid; grid-template-columns: 1.15fr 1fr; width: 100%; min-height: 100vh; }
-.login-brand { background: linear-gradient(160deg, #171717 0%, #050505 70%); border-right: 1px solid rgba(255,255,255,.08); border-radius: 0 28px 28px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; padding: 48px; text-align: center; position: relative; overflow: hidden; }
+.login-brand { background: linear-gradient(160deg, #171717 0%, #050505 70%); border-right: 1px solid rgba(255,255,255,.08); border-radius: 0 16px 16px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; padding: 48px; text-align: center; position: relative; overflow: hidden; }
 .login-brand::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.08), transparent 45%); pointer-events: none; }
-.brand-kicker { font-size: .7rem; letter-spacing: .28em; color: #8a8a8a; font-weight: 800; margin: 0; }
-.brand-logo { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.brand-logo { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .brand-logo img { width: 150px; height: auto; filter: brightness(0) invert(1); }
 .brand-word { font-family: var(--font-heading); font-weight: 800; letter-spacing: .18em; font-size: 1.1rem; }
 .brand-desc { color: #9a9a9a; max-width: 340px; margin: 0; font-size: .95rem; }
@@ -106,18 +104,21 @@ const flagLabel = computed(() => (currentLang.value === 'id' ? 'ID' : 'EN'))
 .back-link:hover { color: #fff; }
 .hub-mark { position: absolute; bottom: 22px; right: 28px; font-size: .68rem; letter-spacing: .16em; font-weight: 800; color: #cfcfcf; margin: 0; }
 @media (max-width: 992px) {
+  .lang-fab { display: none; }
+  .hub-mark { display: none; }
   .login-shell { grid-template-columns: 1fr; }
-  .login-brand { border-radius: 0 0 26px 26px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); padding: 34px 22px 56px; min-height: 30vh; }
+  .login-brand { border-radius: 0 0 26px 26px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); padding: 48px 22px 56px; min-height: 30vh; }
+  .brand-logo { margin-top: 14px; }
   .brand-logo img { width: 104px; }
   .brand-word { font-size: .95rem; }
   .brand-desc { font-size: .85rem; }
-  .login-panel { border-radius: 26px 26px 0 0; margin-top: -26px; padding: 44px 22px 72px; }
+  .login-panel { border-radius: 26px 26px 0 0; margin-top: -36px; padding: 36px 22px 72px; }
   .panel-title { font-size: 1.65rem; }
   .hub-mark { left: 0; right: 0; text-align: center; bottom: 18px; }
 }
 @media (max-width: 480px) {
-  .login-brand { padding: 28px 18px 52px; }
-  .brand-kicker { font-size: .62rem; }
+  .login-brand { padding: 42px 18px 52px; }
+  
   .panel-title { font-size: 1.45rem; }
   .btn-primary { padding: 14px; border-radius: 11px; }
 }

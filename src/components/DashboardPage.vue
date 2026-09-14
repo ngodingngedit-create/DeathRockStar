@@ -1,7 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, createApp, nextTick } from 'vue'
 import { isLoggedIn, currentUser } from '../store/auth.js'
 import { t } from '../store/lang.js'
+import ResiDocument, { buildResiData } from './ResiDocument.vue'
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://api.kolektix.com'
 const CREATOR_SLUG = 'ndoqidrhnp'
@@ -46,9 +49,16 @@ const mapTransaction = (r = {}, idx = 0) => {
     items,
     total_qty,
     total_price,
-    status: normalizeStatus(first(r.status, r.payment_status, r.order_status)),
-    created_at: formatDate(first(r.created_at, r.order_date, r.date))
+    status: normalizeStatus(first(r.status, r.payment_status, r.order_status, r.transaction_status?.name)),
+    created_at: formatDate(first(r.created_at, r.order_date, r.date)),
+    raw: r
   }
+}
+const esc = (v) => String(v ?? '-').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const isExpiredTrx = (o) => {
+  const t = o?.raw || o || {}
+  const name = String(t.transaction_status?.name || o?.status || '').toLowerCase()
+  return t.transaction_status_id === 4 || ['expired', 'cancelled', 'canceled', 'failed'].includes(name) || name.includes('gagal')
 }
 
 const loading = ref(true)
@@ -147,13 +157,44 @@ const productLabel = (s) => s || t('dashAllProducts')
 const setProductFilter = (s) => { productFilter.value = s; isProductDropdownOpen.value = false }
 const switchTab = (tab) => { activeTab.value = tab; currentPage.value = 1 }
 
-const printResi = (o) => {
-  const rows = o.items.map((i) => `<tr><td>${i.product_name} (${i.variant_name})</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">Rp ${Number(i.price).toLocaleString('id-ID')}</td></tr>`).join('')
-  const w = window.open('', '_blank', 'width=420,height=640')
-  if (!w) return
-  w.document.write(`<html><head><title>Resi ${o.invoice_no}</title><style>body{font-family:monospace;padding:20px;color:#000}h2{text-align:center;margin:0}p{font-size:12px}table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}td{padding:4px 0;border-bottom:1px dashed #999}.tot{font-weight:bold;font-size:14px}@media print{button{display:none}}</style></head><body><h2>DEATHROCKSTAR</h2><p style="text-align:center">Resi Pengiriman<br>${o.invoice_no}</p><hr><p>Penerima: <b>${o.customer.name}</b><br>${o.customer.phone}<br>${o.customer.email}</p><hr><table>${rows}</table><p class="tot">Qty: ${o.total_qty} &nbsp; Total: Rp ${Number(o.total_price).toLocaleString('id-ID')}</p><hr><p>Status: ${o.status}</p><button onclick="window.print()" style="width:100%;padding:10px;margin-top:10px">Print</button></body></html>`)
-  w.document.close()
-  w.focus()
+const printResi = async (o) => {
+  try {
+    const r = o?.raw || {}
+    const inv = o.invoice_no
+    if (inv && inv !== '-') {
+      const res = await fetch(`${API_BASE}/api/order-product-invoice/${inv}`, { headers: { Accept: 'application/json' } })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok && json?.status && json?.data) {
+        const d = json.data.order || json.data
+        const courier = json.data.courier || {}
+        const manifestArr = Array.isArray(json.data.manifest) ? json.data.manifest[0] : null
+        o = { ...o, raw: { ...r, ...d, courier, latest_manifest: d.latest_manifest || r.latest_manifest || manifestArr } }
+      }
+    }
+  } catch { /* ponytail: fallback ke data tabel jika detail invoice gagal */ }
+  const resi = buildResiData(o)
+  const holder = document.createElement('div')
+  holder.style.cssText = 'position:fixed;left:-9999px;top:0;'
+  document.body.appendChild(holder)
+  const app = createApp(ResiDocument, { resi })
+  app.mount(holder)
+  await nextTick()
+  await new Promise((r) => setTimeout(r, 50))
+  try {
+    const canvas = await html2canvas(holder.firstElementChild, { scale: 2, backgroundColor: '#ffffff' })
+    const img = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({ unit: 'mm', format: 'a6' })
+    const pw = 105
+    const ph = 148
+    const ratio = Math.min(pw / canvas.width, ph / canvas.height)
+    const w = canvas.width * ratio
+    const h = canvas.height * ratio
+    pdf.addImage(img, 'PNG', (pw - w) / 2, 5, w, h)
+    pdf.save(`Resi-${resi.referenceNumber}.pdf`)
+  } finally {
+    app.unmount()
+    holder.remove()
+  }
 }
 
 const filteredVariants = computed(() => {
@@ -268,8 +309,8 @@ onMounted(async () => {
         <div class="section-header">
           <div class="header-main trx-header-main">
             <h2>{{ t('dashTabTrx') }}</h2>
+            <div class="badge-count">{{ filteredTransactions.length }} {{ t('dashTrxUnit') }}</div>
             <div class="total-info">
-              <div class="badge-count">{{ filteredTransactions.length }} {{ t('dashTrxUnit') }}</div>
               <button class="export-btn" @click="exportCsv" :title="t('dashExport')" :aria-label="t('dashExport')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 <span class="export-label">{{ t('dashExport') }}</span>
@@ -536,6 +577,8 @@ onMounted(async () => {
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap; }
 .section-header h2 { font-size: 1.5rem; font-weight: 800; white-space: nowrap; margin: 0; }
 .header-main { display: flex; align-items: center; gap: 15px; }
+.trx-header-main .badge-count { margin-left: 0; }
+.trx-header-main .total-info { margin-left: auto; }
 .header-filters { display: flex; gap: 15px; flex-grow: 1; justify-content: flex-end; }
 .badge-count { background: rgba(255, 255, 255, 0.1); color: #ffffff; padding: 6px 16px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; }
 .search-box { position: relative; flex-grow: 1; max-width: 400px; }
@@ -628,8 +671,11 @@ onMounted(async () => {
   .stat-value { font-size: 1.1rem; word-break: break-word; }
   .section-header { flex-direction: column; align-items: stretch; gap: 15px; }
   .header-main { flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 10px; }
-  .trx-header-main { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; }
-  .trx-header-main .total-info { margin-left: 0; justify-content: flex-start; }
+  .trx-header-main { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .trx-header-main h2 { flex: 1 1 auto; font-size: 0.95rem; min-width: 0; }
+  .trx-header-main .badge-count { margin-left: auto; }
+  .trx-header-main .total-info { flex-basis: 100%; margin-left: 0; justify-content: stretch; }
+  .trx-header-main .export-btn { flex: 1 1 auto; width: 100%; justify-content: center; padding: 12px 15px; font-size: 0.9rem; }
   .section-header h2 { font-size: 1.1rem; flex: 1 1 auto; min-width: 0; }
   .total-info { margin-left: auto; flex-shrink: 0; gap: 8px; }
   .badge-count { font-size: 0.68rem; padding: 4px 10px; white-space: nowrap; line-height: 1.2; }
@@ -670,12 +716,12 @@ onMounted(async () => {
   .stat-value { font-size: .98rem; }
   .transactions-section { padding: 20px 14px; border-radius: 0 0 10px 10px; }
   .section-header h2 { font-size: 1rem; }
+  .trx-header-main h2 { font-size: 0.85rem; }
   .header-main { gap: 8px; }
   .badge-count { font-size: 0.62rem; padding: 3px 8px; }
   .report-tabs { padding: 0 12px; border-radius: 10px 10px 0 0; flex-wrap: nowrap; overflow-x: auto; }
   .tab-btn { flex: 0 0 auto; padding: 12px 14px; font-size: 0.82rem; }
-  .export-label { display: none; }
-  .export-btn { padding: 7px; border-radius: 50%; }
+  .export-btn { flex: 1 1 auto; width: 100%; justify-content: center; padding: 12px 15px; border-radius: 12px; font-size: 0.9rem; }
   .print-label { display: none; }
   .print-btn { padding: 9px; border-radius: 50%; }
   .resi-table { min-width: 960px; border-spacing: 0 8px; }
