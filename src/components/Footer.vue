@@ -55,7 +55,6 @@ import { t } from '../store/lang.js'
         <ul class="footer-links">
           <li><a href="#home" class="hover-underline">{{ t('home') }}</a></li>
           <li><a href="#merch-page" class="hover-underline">{{ t('merch') }}</a></li>
-          <li><a href="#events-page" class="hover-underline">{{ t('events') }}</a></li>
           <li><a href="#about" class="hover-underline">{{ t('menuAbout') }}</a></li>
           <li><a href="#contact" class="hover-underline">{{ t('menuContact') }}</a></li>
         </ul>

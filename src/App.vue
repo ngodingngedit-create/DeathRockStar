@@ -58,9 +58,6 @@ onMounted(() => {
       <div v-if="currentRoute === '#merch-page'">
         <MerchPage />
       </div>
-      <div v-else-if="currentRoute === '#events-page'">
-        <EventsPage />
-      </div>
       <div v-else-if="currentRoute === '#transaction-event'">
         <TransactionEvent />
       </div>
@@ -73,7 +70,7 @@ onMounted(() => {
       <div v-else-if="currentRoute === '#login'">
         <LoginPage />
       </div>
-      <div v-else-if="currentRoute === '#dashboard'">
+      <div v-else-if="currentRoute === '#live-report'">
         <DashboardPage />
       </div>
       <div v-else>
@@ -85,7 +82,7 @@ onMounted(() => {
     </main>
 
     <!-- Footer -->
-    <Footer v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login' && currentRoute !== '#dashboard'" />
+    <Footer v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login'" />
 
     <!-- Mobile Bottom Navigation (separate component, mobile-only) -->
     <MobileBottomNav v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login'" />

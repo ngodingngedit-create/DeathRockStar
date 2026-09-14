@@ -67,7 +67,7 @@ const handleProfileClick = () => {
 
 const goDashboard = () => {
   isProfileOpen.value = false
-  window.location.hash = '#dashboard'
+  window.location.hash = '#live-report'
 }
 
 const selectLanguage = (lang) => {
@@ -75,11 +75,7 @@ const selectLanguage = (lang) => {
   isLangOpen.value = false
 }
 
-const navLinks = computed(() => isAdmin.value ? [
-  { name: t('home'), href: '#home' },
-  { name: t('merch'), href: '#merch-page' },
-  { name: 'DASHBOARD', href: '#dashboard' },
-] : [
+const navLinks = computed(() => [
   { name: t('home'), href: '#home' },
   { name: t('merch'), href: '#merch-page' },
 ])
@@ -243,15 +239,6 @@ onMounted(() => {
                 <span class="profile-name">{{ currentUser?.name || currentUser?.email || 'User' }}</span>
                 <span class="profile-email">{{ currentUser?.email || '' }}</span>
               </div>
-              <button v-if="isAdmin" class="profile-option profile-dashboard" @click="goDashboard">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                <span>{{ t('profileDashboard') }}</span>
-              </button>
               <button class="profile-option profile-logout" @click="handleLogout">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>

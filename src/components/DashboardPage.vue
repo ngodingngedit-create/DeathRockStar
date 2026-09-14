@@ -220,10 +220,6 @@ const exportCsv = () => {
 }
 
 onMounted(async () => {
-  if (!isLoggedIn.value) {
-    window.location.hash = '#login'
-    return
-  }
   try {
     const res = await fetch(`${API_BASE}/api/order-product/creator/${CREATOR_SLUG}/transactions?page=1&per_page=200`, { headers: { Accept: 'application/json' } })
     const json = await res.json().catch(() => ({}))
@@ -246,7 +242,7 @@ onMounted(async () => {
   <div class="live-report-page">
     <main class="report-container">
       <div class="page-title-section">
-        <h1>{{ t('dashTitle') }}</h1>
+        <h1>{{ t('navLiveReport') }}</h1>
         <p class="subtitle">{{ t('dashSubtitle') }}{{ currentUser?.name ? ' — ' + currentUser.name : '' }}</p>
         <p v-if="loadError" class="load-error">{{ loadError }}</p>
       </div>
@@ -470,6 +466,20 @@ onMounted(async () => {
             <div class="search-box">
               <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input type="text" :placeholder="t('dashSearchPh')" v-model="searchQuery" @input="onSearch" class="search-input" />
+            </div>
+            <div class="custom-dropdown-container" v-click-outside="closeDropdown">
+              <div class="custom-dropdown-header" :class="{ 'is-active': isDropdownOpen }" @click="toggleDropdown">
+                <span class="selected-label">{{ statusLabel(statusFilter) }}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="dropdown-arrow"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <transition name="fade">
+                <div v-if="isDropdownOpen" class="custom-dropdown-options">
+                  <div class="dropdown-option" :class="{ 'is-selected': statusFilter === '' }" @click="setStatus('')">{{ t('dashAllStatus') }}</div>
+                  <div class="dropdown-option" :class="{ 'is-selected': statusFilter === 'paid' }" @click="setStatus('paid')">Paid</div>
+                  <div class="dropdown-option" :class="{ 'is-selected': statusFilter === 'pending' }" @click="setStatus('pending')">Pending</div>
+                  <div class="dropdown-option" :class="{ 'is-selected': statusFilter === 'expired' }" @click="setStatus('expired')">Expired</div>
+                </div>
+              </transition>
             </div>
           </div>
         </div>

@@ -78,44 +78,9 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Beranda' : 'Home' }}</span>
       </a>
 
-      <!-- Toko (Store) admin di urutan ke-2, user di urutan ke-3 -->
+      <!-- Koleksi (user only) -->
       <a
-        v-if="isAdmin"
-        href="#merch-page"
-        class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#merch-page') }"
-        @click="handleTabClick('#merch-page')"
-      >
-        <div class="active-indicator"></div>
-        <div class="tab-icon-wrapper">
-          <svg class="tab-svg-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          </svg>
-        </div>
-        <span class="tab-label">{{ currentLang === 'id' ? 'Toko' : 'Store' }}</span>
-      </a>
-
-      <!-- Koleksi (user) / Dashboard (admin di urutan ke-3) -->
-      <a
-        v-if="isAdmin"
-        href="#dashboard"
-        class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#dashboard') }"
-        @click="handleTabClick('#dashboard')"
-      >
-        <div class="active-indicator"></div>
-        <div class="tab-icon-wrapper">
-          <svg class="tab-svg-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-        </div>
-        <span class="tab-label">Dashboard</span>
-      </a>
-      <a
-        v-else
+        v-if="!isAdmin"
         href="#home"
         class="bottom-nav-item"
         :class="{ 'active': isTabActive('#merch') }"
@@ -133,9 +98,8 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Koleksi' : 'Collection' }}</span>
       </a>
 
-      <!-- Toko (Store) user di urutan ke-3 -->
+      <!-- Toko (Store) -->
       <a
-        v-if="!isAdmin"
         href="#merch-page"
         class="bottom-nav-item"
         :class="{ 'active': isTabActive('#merch-page') }"

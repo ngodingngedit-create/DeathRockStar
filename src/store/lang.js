@@ -47,7 +47,7 @@ export const t = (key) => {
     heroKicker3: { id: 'KOMUNITAS KREATIF', en: 'CREATIVE COMMUNITY' },
     heroTitle3: { id: 'GUNCANG KOLEKTIF.<br>GABUNG KELUARGA.', en: 'ROCK THE COLLECTIVE.<br>JOIN THE FAMILY.' },
     heroDesc3: { id: 'Lebih dari sekadar musik. Sebuah platform di mana seniman, pencipta, dan penggemar bersatu untuk membentuk masa depan rock.', en: 'More than just music. A platform where artists, creators, and fans unite to shape the future of rock.' },
-    exploreEvents: { id: 'JELAJAHI EVENT', en: 'EXPLORE EVENTS' },
+   
     shopMerch: { id: 'BELANJA MERCH', en: 'SHOP MERCH' },
     heroFeatureTitle1: { id: 'PENGALAMAN LIVE', en: 'LIVE EXPERIENCES' },
     heroFeatureDesc1: { id: 'Konser & festival yang tidak ingin Anda lewatkan', en: 'Concerts & festivals you don\'t want to miss' },
