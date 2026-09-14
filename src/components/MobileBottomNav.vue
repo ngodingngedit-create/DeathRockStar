@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { currentLang } from '../store/lang.js'
 import { t } from '../store/lang.js'
 import { isAdmin } from '../store/auth.js'
+import { navigate } from '../router.js'
 import { useProductAutocomplete } from '../composables/useProductAutocomplete.js'
 
 const currentHash = ref(window.location.hash || '#home')
@@ -25,7 +26,7 @@ const handleTabClick = (href) => {
   activeTab.value = href
   if (href === '#merch') {
     // Koleksi scrolls to the merch section on the home page
-    window.location.hash = '#home'
+    navigate('#home')
     setTimeout(() => {
       const el = document.getElementById('merch')
       if (el) el.scrollIntoView({ behavior: 'smooth' })

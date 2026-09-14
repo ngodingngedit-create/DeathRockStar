@@ -25,7 +25,7 @@ const handleContinue = () => {
   authToken.value = 'dev-token'
   localStorage.setItem('user', JSON.stringify(mockUser))
   localStorage.setItem('token', 'dev-token')
-  window.location.hash = '#live-report'
+  window.location.hash = 'live-report'
   loading.value = false
 }
 

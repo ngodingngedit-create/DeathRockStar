@@ -14,6 +14,7 @@ import TransactionEvent from './components/TransactionEvent.vue'
 import TransactionMerch from './components/TransactionMerch.vue'
 import Footer from './components/Footer.vue'
 import MobileBottomNav from './components/MobileBottomNav.vue'
+import { listenCleanUrl, resolveInitialRoute } from './router.js'
 
 const currentRoute = ref(window.location.hash)
 const selectedEventSlug = ref('')
@@ -30,6 +31,8 @@ const getEventSlugFromHash = (hash) => {
 }
 
 onMounted(() => {
+  resolveInitialRoute()
+  listenCleanUrl()
   window.addEventListener('hashchange', () => {
     currentRoute.value = window.location.hash
     if (window.location.hash.startsWith('#event-detail-')) {

@@ -48,41 +48,7 @@ import { t } from '../store/lang.js'
           </a>
         </div>
       </div>
-
-      <!-- Links Grid Column: Menu -->
-      <div class="footer-links-col">
-        <h4 class="col-title">MENU</h4>
-        <ul class="footer-links">
-          <li><a href="#home" class="hover-underline">{{ t('home') }}</a></li>
-          <li><a href="#merch-page" class="hover-underline">{{ t('merch') }}</a></li>
-          <li><a href="#about" class="hover-underline">{{ t('menuAbout') }}</a></li>
-          <li><a href="#contact" class="hover-underline">{{ t('menuContact') }}</a></li>
-        </ul>
-      </div>
-
-      <!-- Links Grid Column: Shop -->
-      <div class="footer-links-col">
-        <h4 class="col-title">SHOP</h4>
-        <ul class="footer-links">
-          <li><a href="#merch-page" class="hover-underline">{{ t('viewAllMerch') }}</a></li>
-          <li><a href="#merch-page" class="hover-underline">{{ t('shopTshirt') }}</a></li>
-          <li><a href="#merch-page" class="hover-underline">{{ t('shopHoodie') }}</a></li>
-          <li><a href="#merch-page" class="hover-underline">{{ t('accessories') }}</a></li>
-          <li><a href="#merch-page" class="hover-underline">{{ t('shopSale') }}</a></li>
-        </ul>
-      </div>
-
-      <!-- Links Grid Column: Info -->
-      <div class="footer-links-col">
-        <h4 class="col-title">INFO</h4>
-        <ul class="footer-links">
-          <li><a href="#" class="hover-underline">{{ t('infoFAQ') }}</a></li>
-          <li><a href="#" class="hover-underline">{{ t('infoShipping') }}</a></li>
-          <li><a href="#" class="hover-underline">{{ t('infoReturns') }}</a></li>
-          <li><a href="#" class="hover-underline">{{ t('infoTerms') }}</a></li>
-          <li><a href="#" class="hover-underline">{{ t('infoPrivacy') }}</a></li>
-        </ul>
-      </div>
+      
     </div>
 
     <!-- Bottom copyrights area -->

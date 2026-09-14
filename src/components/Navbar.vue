@@ -11,6 +11,7 @@ import {
 } from '../store/cart.js'
 import { currentLang, setLang, t } from '../store/lang.js'
 import { isLoggedIn, isAdmin, currentUser, logout } from '../store/auth.js'
+import { navigate } from '../router.js'
 import { useProductAutocomplete } from '../composables/useProductAutocomplete.js'
 
 const isMobileMenuOpen = ref(false)
@@ -42,18 +43,18 @@ const toggleCart = () => {
 
 const handleCheckout = () => {
   isCartOpen.value = false
-  window.location.hash = '#transaction-merch'
+  navigate('#transaction-merch')
 }
 
 const handleLogout = () => {
   logout()
   isProfileOpen.value = false
-  window.location.hash = '#home'
+  navigate('#home')
 }
 
 const handleProfileClick = () => {
   if (!isLoggedIn.value) {
-    window.location.hash = '#login'
+    navigate('#login')
     return
   }
   const next = !isProfileOpen.value
@@ -67,7 +68,7 @@ const handleProfileClick = () => {
 
 const goDashboard = () => {
   isProfileOpen.value = false
-  window.location.hash = '#live-report'
+  navigate('live-report')
 }
 
 const selectLanguage = (lang) => {
@@ -97,7 +98,7 @@ const isTabActive = (href) => {
 const handleTabClick = (href) => {
   isMobileMenuOpen.value = false
   if (href === '#merch') {
-    window.location.hash = '#home'
+    navigate('#home')
     setTimeout(() => {
       const el = document.getElementById('merch')
       if (el) el.scrollIntoView({ behavior: 'smooth' })
