@@ -10,6 +10,7 @@ import {
   formattedTotalCartPrice 
 } from '../store/cart.js'
 import { currentLang, setLang, t } from '../store/lang.js'
+import { isLoggedIn, isAdmin, currentUser, logout } from '../store/auth.js'
 
 // Import assets for search results preview
 import noiseImg from '../assets/images/event_noise_parade.png'
@@ -23,16 +24,58 @@ import bagImg from '../assets/images/merch_bag.png'
 const isMobileMenuOpen = ref(false)
 const isLangOpen = ref(false)
 const isSearchOpen = ref(false)
+const isProfileOpen = ref(false)
 const searchQuery = ref('')
 const searchInput = ref(null)
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
+  if (isMobileMenuOpen.value) {
+    isCartOpen.value = false
+    isSearchOpen.value = false
+    isProfileOpen.value = false
+    isLangOpen.value = false
+  }
+}
+
+const toggleCart = () => {
+  isCartOpen.value = !isCartOpen.value
+  if (isCartOpen.value) {
+    isMobileMenuOpen.value = false
+    isSearchOpen.value = false
+    isProfileOpen.value = false
+    isLangOpen.value = false
+  }
 }
 
 const handleCheckout = () => {
   isCartOpen.value = false
   window.location.hash = '#transaction-merch'
+}
+
+const handleLogout = () => {
+  logout()
+  isProfileOpen.value = false
+  window.location.hash = '#home'
+}
+
+const handleProfileClick = () => {
+  if (!isLoggedIn.value) {
+    window.location.hash = '#login'
+    return
+  }
+  const next = !isProfileOpen.value
+  isProfileOpen.value = next
+  if (next) {
+    isCartOpen.value = false
+    isMobileMenuOpen.value = false
+    isSearchOpen.value = false
+  }
+}
+
+const goDashboard = () => {
+  isProfileOpen.value = false
+  window.location.hash = '#dashboard'
 }
 
 const selectLanguage = (lang) => {
@@ -121,12 +164,21 @@ onMounted(() => {
 <template>
   <nav class="navbar">
     <div class="container navbar-container">
-      <!-- Logo -->
-      <a href="#home" class="logo-link">
-        <div class="logo-wrapper">
-          <img src="/logo/logo.png" alt="Death Rock Star Mascot" class="logo-img" />
-        </div>
-      </a>
+      <div class="navbar-left">
+        <!-- Mobile Menu Toggle (Left, mobile only) -->
+        <button class="mobile-toggle mobile-toggle-left" @click="toggleMobileMenu" :class="{ 'is-active': isMobileMenuOpen }" aria-label="Toggle Menu">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <!-- Logo -->
+        <a href="#home" class="logo-link">
+          <div class="logo-wrapper">
+            <img src="/logo/logo.png" alt="Death Rock Star Mascot" class="logo-img" />
+          </div>
+        </a>
+      </div>
 
       <!-- Desktop Nav Links -->
       <div class="desktop-menu">
@@ -208,12 +260,41 @@ onMounted(() => {
           <span class="cart-badge">{{ totalItemsCount }}</span>
         </button>
 
-        <!-- Mobile Menu Toggle -->
-        <button class="mobile-toggle" @click="toggleMobileMenu" :class="{ 'is-active': isMobileMenuOpen }" aria-label="Toggle Menu">
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-        </button>
+        <!-- Profile -->
+        <div class="profile-selector-wrapper">
+          <button class="profile-btn" aria-label="Profile" @click="handleProfileClick">
+            <span v-if="isLoggedIn && currentUser?.name" class="profile-avatar">{{ currentUser.name.charAt(0).toUpperCase() }}</span>
+            <svg v-else class="profile-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </button>
+          <transition name="fade">
+            <div v-if="isProfileOpen && isLoggedIn" class="profile-dropdown-card">
+              <div class="profile-info">
+                <span class="profile-name">{{ currentUser?.name || currentUser?.email || 'User' }}</span>
+                <span class="profile-email">{{ currentUser?.email || '' }}</span>
+              </div>
+              <button v-if="isAdmin" class="profile-option profile-dashboard" @click="goDashboard">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>{{ t('profileDashboard') }}</span>
+              </button>
+              <button class="profile-option profile-logout" @click="handleLogout">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>{{ t('profileLogout') }}</span>
+              </button>
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
@@ -223,7 +304,7 @@ onMounted(() => {
     </transition>
 
     <!-- Mobile Menu Sidebar Drawer -->
-    <transition name="slide-right">
+    <transition name="slide-left">
       <div v-if="isMobileMenuOpen" class="mobile-menu-sidebar">
         <!-- Sidebar Header -->
         <div class="sidebar-header">
@@ -483,7 +564,7 @@ onMounted(() => {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
-  z-index: 100;
+  z-index: 1000;
   display: flex;
   align-items: center;
   transition: var(--transition-smooth);
@@ -493,6 +574,19 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.navbar-left .mobile-toggle {
+  order: 0;
+  margin-right: 0;
 }
 
 .logo-link {
@@ -529,6 +623,9 @@ onMounted(() => {
 .desktop-menu {
   display: flex;
   align-items: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .nav-list {
@@ -616,45 +713,69 @@ onMounted(() => {
 .mobile-toggle {
   display: none;
   flex-direction: column;
-  justify-content: space-between;
-  width: 24px;
-  height: 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   position: relative;
-}
-
-.hamburger-bar {
-  width: 100%;
-  height: 2px;
-  background-color: var(--text-primary);
   transition: var(--transition-smooth);
 }
 
+.mobile-toggle:hover {
+  border-color: var(--border-color-hover);
+  background-color: var(--bg-tertiary);
+}
+
+.hamburger-bar {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--text-primary);
+  transition: transform 0.3s ease, opacity 0.2s ease, width 0.3s ease;
+}
+
+.hamburger-bar:nth-child(1) { width: 18px; }
+.hamburger-bar:nth-child(2) { width: 13px; margin-right: 5px; }
+.hamburger-bar:nth-child(3) { width: 18px; }
+
+.mobile-toggle.is-active {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color-hover);
+}
+
 .mobile-toggle.is-active .hamburger-bar:nth-child(1) {
+  width: 18px;
   transform: translateY(7px) rotate(45deg);
 }
 
 .mobile-toggle.is-active .hamburger-bar:nth-child(2) {
   opacity: 0;
+  transform: scaleX(0);
 }
 
 .mobile-toggle.is-active .hamburger-bar:nth-child(3) {
+  width: 18px;
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* Mobile Menu Sidebar Drawer */
+/* Mobile Menu Sidebar Drawer (left side) */
 .mobile-menu-sidebar {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   width: 100%;
   max-width: 320px;
   height: 100vh;
   background-color: #0c0c0c;
-  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
   z-index: 999;
   display: flex;
   flex-direction: column;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.9);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.9);
 }
 
 .menu-backdrop {
@@ -723,11 +844,25 @@ onMounted(() => {
   .desktop-menu {
     display: none;
   }
-  
+
   .mobile-toggle {
     display: flex;
   }
-  
+
+  .mobile-toggle-left {
+    order: -1;
+    margin-right: 0.75rem;
+  }
+
+  .navbar-container {
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .navbar-actions {
+    margin-left: auto;
+  }
+
   .desktop-only {
     display: none;
   }
@@ -1063,6 +1198,16 @@ onMounted(() => {
   transform: translateX(100%);
 }
 
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide-left-enter-from,
+.slide-left-leave-to {
+  transform: translateX(-100%);
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -1094,6 +1239,11 @@ onMounted(() => {
   .cart-icon {
     width: 16px !important;
     height: 16px !important;
+  }
+  .mobile-toggle {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
   }
 }
 
@@ -1183,6 +1333,125 @@ onMounted(() => {
 .lang-option.active {
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
+}
+
+/* ========================================== */
+/* PROFILE BUTTON + ACCORDION CARD            */
+/* ========================================== */
+.profile-selector-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.profile-btn:hover {
+  border-color: var(--border-color-hover);
+  background-color: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.profile-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-dropdown-card {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  background: rgba(18, 18, 18, 0.96);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 220px;
+  z-index: 101;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.25rem;
+  text-align: left;
+}
+
+.profile-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.profile-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.profile-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.profile-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.profile-option.profile-logout:hover {
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+}
+
+.option-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* ========================================== */
@@ -1630,6 +1899,16 @@ onMounted(() => {
 @media (max-width: 767px) {
   .results-list-cards {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-dropdown-card {
+    position: fixed;
+    top: 70px;
+    right: 1rem;
+    left: 1rem;
+    min-width: 0;
   }
 }
 </style>

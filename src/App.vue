@@ -8,6 +8,8 @@ import EventsSection from './components/EventsSection.vue'
 import MerchPage from './components/MerchPage.vue'
 import EventsPage from './components/EventsPage.vue'
 import EventDetailPage from './components/EventDetailPage.vue'
+import LoginPage from './components/LoginPage.vue'
+import DashboardPage from './components/DashboardPage.vue'
 import TransactionEvent from './components/TransactionEvent.vue'
 import TransactionMerch from './components/TransactionMerch.vue'
 import Footer from './components/Footer.vue'
@@ -68,6 +70,12 @@ onMounted(() => {
       <div v-else-if="isEventDetail">
         <EventDetailPage :eventSlug="selectedEventSlug" />
       </div>
+      <div v-else-if="currentRoute === '#login'">
+        <LoginPage />
+      </div>
+      <div v-else-if="currentRoute === '#dashboard'">
+        <DashboardPage />
+      </div>
       <div v-else>
         <HeroSection />
         <MerchSection />
@@ -77,10 +85,10 @@ onMounted(() => {
     </main>
 
     <!-- Footer -->
-    <Footer v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch'" />
+    <Footer v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login' && currentRoute !== '#dashboard'" />
 
     <!-- Mobile Bottom Navigation (separate component, mobile-only) -->
-    <MobileBottomNav v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch'" />
+    <MobileBottomNav v-if="currentRoute !== '#transaction-event' && currentRoute !== '#transaction-merch' && currentRoute !== '#login' && currentRoute !== '#dashboard'" />
   </div>
 </template>
 

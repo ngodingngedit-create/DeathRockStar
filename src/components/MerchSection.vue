@@ -20,7 +20,7 @@ import { onMounted } from 'vue'
 
 onMounted(async () => {
   try {
-    const response = await fetch('https://api.kolektix.my.id/api/product?creator_id=48')
+    const response = await fetch('https://api.kolektix.com/api/product?creator_id=127')
     const result = await response.json()
     if (result.data) {
       products.value = result.data.map(p => {
@@ -103,7 +103,7 @@ const openQuickView = async (product) => {
 
   if (product.slug) {
     try {
-      const response = await fetch(`https://api.kolektix.my.id/api/product/${product.slug}`)
+      const response = await fetch(`https://api.kolektix.com/api/product/${product.slug}`)
       const result = await response.json()
       const detail = result.data
       
