@@ -14,10 +14,18 @@ import TransactionEvent from './components/TransactionEvent.vue'
 import TransactionMerch from './components/TransactionMerch.vue'
 import Footer from './components/Footer.vue'
 import MobileBottomNav from './components/MobileBottomNav.vue'
-import { listenCleanUrl, resolveInitialRoute } from './router.js'
+import { listenCleanUrl, resolveInitialRoute, getRoute } from './router.js'
 
-const currentRoute = ref(window.location.hash)
+resolveInitialRoute()
+const currentRoute = ref(getRoute())
 const selectedEventSlug = ref('')
+
+const syncRoute = () => {
+  currentRoute.value = getRoute()
+  if (currentRoute.value.startsWith('#event-detail-')) {
+    selectedEventSlug.value = getEventSlugFromHash(currentRoute.value)
+  }
+}
 
 const isEventDetail = computed(() => {
   return currentRoute.value && currentRoute.value.startsWith('#event-detail-')
@@ -31,20 +39,12 @@ const getEventSlugFromHash = (hash) => {
 }
 
 onMounted(() => {
-  resolveInitialRoute()
+  syncRoute()
   listenCleanUrl()
   window.addEventListener('hashchange', () => {
-    currentRoute.value = window.location.hash
-    if (window.location.hash.startsWith('#event-detail-')) {
-      selectedEventSlug.value = getEventSlugFromHash(window.location.hash)
-    }
+    syncRoute()
     window.scrollTo({ top: 0, behavior: 'instant' })
   })
-  
-  const initialHash = window.location.hash
-  if (initialHash.startsWith('#event-detail-')) {
-    selectedEventSlug.value = getEventSlugFromHash(initialHash)
-  }
 })
 </script>
 
