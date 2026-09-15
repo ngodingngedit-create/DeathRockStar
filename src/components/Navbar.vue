@@ -11,7 +11,7 @@ import {
 } from '../store/cart.js'
 import { currentLang, setLang, t } from '../store/lang.js'
 import { isLoggedIn, isAdmin, currentUser, logout } from '../store/auth.js'
-import { navigate } from '../router.js'
+import { getRoute, listenRouteChange, navigate } from '../router.js'
 import { useProductAutocomplete } from '../composables/useProductAutocomplete.js'
 
 const isMobileMenuOpen = ref(false)
@@ -43,18 +43,18 @@ const toggleCart = () => {
 
 const handleCheckout = () => {
   isCartOpen.value = false
-  navigate('#transaction-merch')
+  navigate('/transaction/merch')
 }
 
 const handleLogout = () => {
   logout()
   isProfileOpen.value = false
-  navigate('#home')
+  navigate('/')
 }
 
 const handleProfileClick = () => {
   if (!isLoggedIn.value) {
-    navigate('#login')
+    navigate('/login')
     return
   }
   const next = !isProfileOpen.value
@@ -68,7 +68,7 @@ const handleProfileClick = () => {
 
 const goDashboard = () => {
   isProfileOpen.value = false
-  navigate('live-report')
+  navigate('/live-report')
 }
 
 const selectLanguage = (lang) => {
@@ -77,8 +77,8 @@ const selectLanguage = (lang) => {
 }
 
 const navLinks = computed(() => [
-  { name: t('home'), href: '#home' },
-  { name: t('merch'), href: '#merch-page' },
+  { name: t('home'), href: '/' },
+  { name: t('merch'), href: '/merch' },
 ])
 
 const { results: merchResults, loading: merchLoading, search: searchMerch } = useProductAutocomplete()
@@ -86,26 +86,14 @@ watch(searchQuery, (q) => searchMerch(q))
 
 const filteredSearchProducts = computed(() => merchResults.value)
 
-const currentHash = ref(window.location.hash || '#home')
+const currentPath = ref(getRoute())
 
-const isTabActive = (href) => {
-  if (href === '#home') {
-    return currentHash.value === '#home' || currentHash.value === '' || currentHash.value === '#'
-  }
-  return currentHash.value === href
-}
+const isTabActive = (href) => currentPath.value === href
 
-const handleTabClick = (href) => {
+const handleNav = (e, href) => {
+  if (e) e.preventDefault()
   isMobileMenuOpen.value = false
-  if (href === '#merch') {
-    navigate('#home')
-    setTimeout(() => {
-      const el = document.getElementById('merch')
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
-  } else {
-    window.location.hash = href
-  }
+  navigate(href)
 }
 
 watch(isSearchOpen, (open) => {
@@ -120,9 +108,8 @@ watch(isSearchOpen, (open) => {
 })
 
 onMounted(() => {
-  window.addEventListener('hashchange', () => {
-    currentHash.value = window.location.hash || '#home'
-  })
+  currentPath.value = getRoute()
+  listenRouteChange((path) => { currentPath.value = path })
 })
 </script>
 
@@ -138,7 +125,7 @@ onMounted(() => {
         </button>
 
         <!-- Logo -->
-        <a href="#home" class="logo-link">
+        <a href="/" class="logo-link" @click.prevent="handleNav($event, '/')">
           <div class="logo-wrapper">
             <img src="/logo/logo.png" alt="Death Rock Star Mascot" class="logo-img" />
           </div>
@@ -149,10 +136,11 @@ onMounted(() => {
       <div class="desktop-menu">
         <ul class="nav-list">
           <li v-for="link in navLinks" :key="link.name">
-            <a 
-              :href="link.href" 
+            <a
+              :href="link.href"
               class="nav-item hover-underline"
-              :class="{ 'active-link': currentHash === link.href || (link.href === '#home' && (currentHash === '' || currentHash === '#home')) }"
+              :class="{ 'active-link': currentPath === link.href }"
+              @click.prevent="handleNav($event, link.href)"
             >
               {{ link.name }}
             </a>
@@ -240,6 +228,9 @@ onMounted(() => {
                 <span class="profile-name">{{ currentUser?.name || currentUser?.email || 'User' }}</span>
                 <span class="profile-email">{{ currentUser?.email || '' }}</span>
               </div>
+              <button class="profile-option" @click="goDashboard">
+                <span>{{ t('profileDashboard') }}</span>
+              </button>
               <button class="profile-option profile-logout" @click="handleLogout">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -276,15 +267,16 @@ onMounted(() => {
         <div class="sidebar-body">
           <ul class="mobile-nav-list">
             <li v-for="link in navLinks" :key="link.name" @click="isMobileMenuOpen = false">
-              <a 
-                :href="link.href" 
+              <a
+                :href="link.href"
                 class="mobile-nav-item"
-                :class="{ 'active-link': currentHash === link.href || (link.href === '#home' && (currentHash === '' || currentHash === '#home')) }"
+                :class="{ 'active-link': currentPath === link.href }"
+                @click.prevent="handleNav($event, link.href)"
               >
                 {{ link.name }}
               </a>
             </li>
-            
+
           </ul>
 
           <!-- Accordion Language Selector (Mobile Sidebar Drawer) -->
@@ -443,12 +435,12 @@ onMounted(() => {
               <div v-else-if="filteredSearchProducts.length > 0" class="search-dropdown-section">
                 <h4 class="results-section-title">MERCHANDISE</h4>
                 <div class="results-list-cards">
-                  <a 
-                    v-for="product in filteredSearchProducts" 
-                    :key="product.id" 
-                    href="#merch-page"
+                  <a
+                    v-for="product in filteredSearchProducts"
+                    :key="product.id"
+                    href="/merch"
                     class="search-result-card"
-                    @click="isSearchOpen = false"
+                    @click.prevent="isSearchOpen = false; handleNav($event, '/merch')"
                   >
                     <img :src="product.image" :alt="product.name" class="result-card-img-tag" />
                     <div class="result-card-info">

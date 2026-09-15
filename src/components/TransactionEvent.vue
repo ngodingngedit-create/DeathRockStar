@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 // Import local image assets for dynamic display in order summary
 import noiseImg from '../assets/images/event_noise_parade.png'
@@ -351,7 +352,7 @@ const formatPrice = (price) => {
 
 // Navigation trigger to go back or home
 const goBack = () => {
-  window.location.hash = `#event-detail-${activeEvent.value.slug || activeEvent.value.id}`
+  navigate('/event/' + (activeEvent.value.slug || activeEvent.value.id))
 }
 
 // Accordion Expand/Collapse States
@@ -513,7 +514,6 @@ const formatEventDayAndDate = (dateStr) => {
 
 onMounted(() => {
   loadCheckoutData()
-  window.addEventListener('hashchange', loadCheckoutData)
   
   // Start the countdown timer
   timerInterval = setInterval(() => {
@@ -524,7 +524,7 @@ onMounted(() => {
       alert(currentLang.value === 'id' 
         ? 'Waktu pembayaran Anda telah habis. Silakan pesan ulang tiket Anda.' 
         : 'Your checkout time has expired. Please re-book your tickets.')
-      window.location.hash = '#events-page'
+      navigate('/events')
     }
   }, 1000)
   
@@ -533,7 +533,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('hashchange', loadCheckoutData)
   if (timerInterval) clearInterval(timerInterval)
   document.removeEventListener('click', handleOutsideClick)
 })
@@ -653,7 +652,7 @@ const handleCheckout = () => {
     : '🎉 Payment Successful!\n\nYour E-Ticket has been successfully sent to the email addresses provided.\nThank you for choosing Kolektix! 🤘')
   
   // Go back to home
-  window.location.hash = ''
+  navigate('/')
 }
 
 // Collapsible Mobile Summary Toggle

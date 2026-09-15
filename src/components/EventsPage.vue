@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 // Initial events list (will be populated from API)
 const events = ref([])
@@ -117,7 +118,7 @@ const changeTab = (tab) => {
 }
 
 const navigateToDetail = (slug) => {
-  window.location.hash = `#event-detail-${slug}`
+  navigate('/event/' + slug)
 }
 
 const translateLocation = (loc) => {
@@ -302,8 +303,8 @@ const translateMonth = (m) => {
                 <span class="price-val">Rp {{ formatPrice(event.price) }}</span>
               </div>
               <!-- Active Ticket Link (Both Upcoming & Past) -->
-              <a 
-                :href="'#event-detail-' + event.slug" 
+              <a
+                :href="'/event/' + event.slug"
                 class="pilih-tiket-btn"
                 :class="{ 'past-event-btn': event.date < BENCHMARK_DATE }"
                 @click.prevent="navigateToDetail(event.slug)"

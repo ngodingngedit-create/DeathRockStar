@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { t } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 const slides = [
   {
@@ -84,7 +85,7 @@ onUnmounted(() => {
           </transition>
           
           <div class="hero-ctas">
-            <a href="#merch-page" class="btn btn-secondary">
+            <a href="/merch" class="btn btn-secondary" @click.prevent="navigate('/merch')">
               {{ t('shopMerch') }}
               <svg class="arrow-icon icon" viewBox="0 0 24 24">
                 <line x1="5" y1="12" x2="19" y2="12"></line>

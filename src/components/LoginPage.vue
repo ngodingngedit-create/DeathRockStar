@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { currentUser, authToken } from '../store/auth.js'
 import { currentLang, setLang, t } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 // ponytail: bypass sementara, Lanjutkan langsung masuk dashboard tanpa OTP;
 // upgrade path: kembalikan step OTP + handleVerify memanggil POST /api/login-auth.
@@ -25,7 +26,7 @@ const handleContinue = () => {
   authToken.value = 'dev-token'
   localStorage.setItem('user', JSON.stringify(mockUser))
   localStorage.setItem('token', 'dev-token')
-  window.location.hash = '#live-report'
+  navigate('/live-report')
   loading.value = false
 }
 
@@ -63,7 +64,7 @@ const flagLabel = computed(() => (currentLang.value === 'id' ? 'ID' : 'EN'))
             </label>
             <button type="submit" class="btn-primary" :disabled="loading">{{ loading ? t('loginProcessing') : t('loginContinue') }}</button>
           </form>
-          <a href="#home" class="back-link">← {{ t('loginBack') }}</a>
+          <a href="/" class="back-link" @click.prevent="navigate('/')">← {{ t('loginBack') }}</a>
         </div>
 
         <p class="hub-mark">{{ t('loginHub') }}</p>

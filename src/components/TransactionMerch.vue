@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { t, currentLang } from '../store/lang.js'
 import { cartItems, totalCartPrice, formatPrice, totalItemsCount } from '../store/cart.js'
+import { navigate } from '../router.js'
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBxZekg89Ut1U72fFpQldJAenvgTy197As"
 const GOOGLE_MAPS_MAP_ID = "795838f77e7bb079c78f5aac"
@@ -457,7 +458,7 @@ const grandTotal = computed(() => {
 })
 
 const goBack = () => {
-  window.location.hash = '#merch-page'
+  navigate('/merch')
 }
 
 const isSubmitting = ref(false)
@@ -595,7 +596,7 @@ const handleCheckoutSubmit = async () => {
 
 onMounted(() => {
   if (cartItems.value.length === 0) {
-    window.location.hash = '#merch-page'
+    navigate('/merch')
   }
   fetchOriginData()
 })

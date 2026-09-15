@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 // Import local image assets for fallback and display
 import noiseImg from '../assets/images/event_noise_parade.png'
@@ -715,7 +716,7 @@ const handleOrderNow = () => {
   localStorage.setItem('kolektix_checkout', JSON.stringify(checkoutData))
 
   // Redirect to the Checkout Page!
-  window.location.hash = '#transaction-event'
+  navigate('/transaction/event')
   isBottomSheetOpen.value = false
 }
 
@@ -785,9 +786,9 @@ const toggleTicketTier = (tier) => {
       
       <!-- Breadcrumb Bar -->
       <!-- <nav class="breadcrumb-nav">
-        <a href="#home">HOME</a>
+        <a href="/">HOME</a>
         <span class="separator">&gt;</span>
-        <a href="#events-page">EVENTS</a>
+        <a href="/events">EVENTS</a>
         <span class="separator">&gt;</span>
         <span class="active-crumb">{{ currentEvent.title }}</span>
       </nav> -->
@@ -1363,7 +1364,7 @@ const toggleTicketTier = (tier) => {
         </div>
 
         <div class="recommended-slider-container" ref="recommendedScrollRef">
-          <a v-for="rec in recommendedEvents" :key="rec.id" :href="'#event-detail-' + rec.slug" class="rec-event-card">
+          <a v-for="rec in recommendedEvents" :key="rec.id" :href="'/event/' + rec.slug" class="rec-event-card" @click.prevent="navigate('/event/' + rec.slug)">
             <div class="rec-card-image-box">
               <img :src="rec.image" :alt="rec.title" class="rec-card-img" />
               <div class="rec-badge-overlay">

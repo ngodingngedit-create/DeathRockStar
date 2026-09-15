@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
 import { t, currentLang } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 // Import local image assets
 import teeImg from '../assets/images/merch_tee.png'
@@ -227,7 +228,7 @@ const handleChat = () => {
           <span class="section-tag">{{ t('merch') }}</span>
           <h2 class="section-title">{{ t('merchTitle') }}</h2>
         </div>
-        <a href="#merch-page" class="view-all-link hover-underline">
+        <a href="/merch" class="view-all-link hover-underline" @click.prevent="navigate('/merch')">
           {{ t('viewAllMerch') }} 
           <svg class="link-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
