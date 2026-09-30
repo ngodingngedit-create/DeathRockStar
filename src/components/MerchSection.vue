@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
+import { addItem, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
 import { t, currentLang } from '../store/lang.js'
 import { navigate } from '../router.js'
 
@@ -21,10 +21,10 @@ import { onMounted } from 'vue'
 
 onMounted(async () => {
   try {
-    const response = await fetch('https://api.kolektix.com/api/product?creator_id=127')
+    const response = await fetch('https://api.kolektix.com/api/product?creator_id=146')
     const result = await response.json()
     if (result.data) {
-      products.value = result.data.map(p => {
+      products.value = result.data.filter((p) => p.product_status_id !== 3).map(p => {
         const varians = p.product_varian || []
         const stock = varians.reduce((acc, v) => acc + (v.stock_qty || 0), 0) || p.qty || 0
         const sizes = varians.length > 0 ? varians.map(v => v.varian_name) : ['One Size']
@@ -43,8 +43,9 @@ onMounted(async () => {
           sizes: sizes,
           colors: [{ name: 'Default', hex: '#000000' }], // fallback color as it's not in API
           images: p.product_image?.map(img => img.image_url) || [],
-          creatorName: p.has_creator?.name || p.creator?.name || 'mocca',
+          creatorName: (() => { const n = p.has_creator?.name || p.creator?.name || 'mocca'; return String(n).toLowerCase() === 'eric' ? 'Death Rock Star' : n })(), // ponytail: API creator 146 masih bernama eric, override display saja; hapus saat backend update nama.
           creatorImage: p.has_creator?.image_url || p.creator?.image_url || '/logo_mocca.png',
+          storeName: p.has_store_location?.store_name || 'Death Rock Star Shop',
           weight: varians.length > 0 ? varians[0].weight : p.weight,
           variant_id: varians.length > 0 ? varians[0].id : null,
           product_id: p.id
@@ -267,51 +268,23 @@ const handleChat = () => {
  
           <!-- Product Details -->
           <div class="product-details">
-            <!-- Name -->
             <h3 class="product-name">{{ product.name }}</h3>
-
-            <!-- Price (below name, aligned right) -->
-            <div class="price-row">
-              <p class="product-price">{{ product.price }}</p>
+            <div class="store-row">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="store-icon">
+                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+              </svg>
+              <span>{{ product.storeName }}</span>
             </div>
-            
-            <!-- Quantity controls (below price, aligned right) -->
-            <div class="quantity-row">
-              <div class="quantity-controls" @click.stop>
-                <button 
-                  class="qty-btn minus" 
-                  @click="decrementItem(product.id)"
-                  :disabled="getItemQuantity(product.id) === 0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4" />
-                  </svg>
-                </button>
-                <span class="qty-value">{{ getItemQuantity(product.id) }}</span>
-                <button 
-                  class="qty-btn plus" 
-                  @click="addItem(product)"
-                  :disabled="product.stock <= 0 || getItemQuantity(product.id) >= product.stock"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Divider Line -->
             <div class="product-divider"></div>
-
-            <!-- Creator Section (below divider, aligned left) -->
             <div class="product-details-bottom">
               <div class="partner-store">
                 <img :src="product.creatorImage" :alt="product.creatorName + ' Logo'" class="partner-logo" />
                 <div class="partner-info">
-                  <span class="partner-label">{{ t('partnerStore') }}</span>
+                  <span class="partner-label">{{ t('providedBy') }}</span>
                   <span class="partner-name">{{ product.creatorName }}</span>
                 </div>
               </div>
+              <p class="product-price">{{ product.price }}</p>
             </div>
           </div>
         </div>
@@ -750,23 +723,44 @@ const handleChat = () => {
 
 .product-name {
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text-primary);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.price-row {
+.store-row {
   display: flex;
-  justify-content: flex-end;
-  width: 100%;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .product-price {
   font-family: var(--font-body);
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #ffffff;
   margin: 0;
   white-space: nowrap;
@@ -826,37 +820,40 @@ const handleChat = () => {
 }
 
 .product-divider {
-  height: 1px;
-  background-color: var(--border-color);
+  height: 0;
+  border-top: 1px dashed var(--border-color);
   width: 100%;
 }
 
 .product-details-bottom {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   width: 100%;
 }
 
 .partner-store {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .partner-logo {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  filter: grayscale(100%) contrast(1.5) brightness(1.2);
+  flex-shrink: 0;
 }
 
 .partner-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .partner-label {
@@ -865,6 +862,7 @@ const handleChat = () => {
   font-weight: 500;
   color: var(--text-muted);
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .partner-name {
@@ -873,7 +871,10 @@ const handleChat = () => {
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1.2;
-  text-transform: lowercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 /* ========================================== */

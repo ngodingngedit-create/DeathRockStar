@@ -47,7 +47,7 @@ import { t } from '../store/lang.js'
             </svg>
           </a>
         </div>
-      </div>
+      </div>  
       
     </div>
 

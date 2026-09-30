@@ -13,7 +13,7 @@ export function mapItem(p = {}, idx = 0) {
     name: String(p.product_name || p.name || p.title || p.label || p.text || '-'),
     price: priceNum ? 'Rp ' + priceNum.toLocaleString('id-ID') : String(p.price_display || p.price || ''),
     image: img,
-    category: String(p.category || p.creator?.name || p.has_creator?.name || 'Merch'),
+    category: (() => { const n = String(p.category || p.creator?.name || p.has_creator?.name || 'Merch'); return n.toLowerCase() === 'eric' ? 'Death Rock Star' : n })(),
   }
 }
 
@@ -30,13 +30,13 @@ let cache = null
 
 async function loadAll() {
   if (cache) return cache
-  const r = await fetch(`${BASE}/api/product?creator_id=127`, { headers: { Accept: 'application/json' } })
+  const r = await fetch(`${BASE}/api/product?creator_id=146`, { headers: { Accept: 'application/json' } })
   const j = await r.json().catch(() => ({}))
-  cache = normalizeList(j).map(mapItem)
+  cache = normalizeList(j).filter((p) => p.product_status_id !== 3).map(mapItem)
   return cache
 }
 
-// ponytail: endpoint /autocomplete mengembalikan 404, jadi kita filter client-side dari /api/product?creator_id=127.
+// ponytail: endpoint /autocomplete mengembalikan 404, jadi kita filter client-side dari /api/product?creator_id=146.
 // Ganti dengan query server-side (mis. /api/product/search?q=) saat backend sudah support.
 export function useProductAutocomplete() {
   const results = ref([])

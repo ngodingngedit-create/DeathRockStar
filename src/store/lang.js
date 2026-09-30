@@ -62,6 +62,7 @@ export const t = (key) => {
     merchTitle: { id: 'DIBUAT UNTUK SCENE.', en: 'MADE FOR THE SCENE.' },
     viewAllMerch: { id: 'LIHAT SEMUA MERCH', en: 'VIEW ALL MERCH' },
     partnerStore: { id: 'Partner Store', en: 'Partner Store' },
+    providedBy: { id: 'Disediakan oleh', en: 'Provided by' },
     quickAdd: { id: 'TAMBAH CEPAT', en: 'QUICK ADD' },
     soldOut: { id: 'HABIS', en: 'SOLD OUT' },
     preOrder: { id: 'PRE-ORDER', en: 'PRE-ORDER' },
