@@ -1611,5 +1611,32 @@ const handleChat = () => {
     width: 6px;
     height: 6px;
   }
+
+  .product-details-bottom {
+    gap: 0.5rem;
+  }
+
+  .partner-store {
+    gap: 0.4rem;
+  }
+
+  .partner-logo {
+    width: 24px;
+    height: 24px;
+  }
+
+  .partner-label {
+    font-size: 0.6rem;
+  }
+
+  .partner-name {
+    font-size: 0.72rem;
+    max-width: 110px;
+  }
+
+  .product-price {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
 }
 </style>
