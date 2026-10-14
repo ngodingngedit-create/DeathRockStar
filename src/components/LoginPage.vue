@@ -1,17 +1,21 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { currentUser, authToken } from '../store/auth.js'
+import { login } from '../store/auth.js'
 import { currentLang, setLang, t } from '../store/lang.js'
 import { navigate } from '../router.js'
 
-// ponytail: bypass sementara, Lanjutkan langsung masuk dashboard tanpa OTP;
-// upgrade path: kembalikan step OTP + handleVerify memanggil POST /api/login-auth.
-const email = ref('admin@deathrockstar.com')
+const email = ref('')
+const password = ref('')
 const emailError = ref('')
+const passwordError = ref('')
+const generalError = ref('')
 const loading = ref(false)
+const showPassword = ref(false)
 
-const handleContinue = () => {
+const handleLogin = async () => {
   emailError.value = ''
+  passwordError.value = ''
+  generalError.value = ''
   if (!email.value.trim()) {
     emailError.value = t('loginErrEmailEmpty')
     return
@@ -20,14 +24,19 @@ const handleContinue = () => {
     emailError.value = t('loginErrEmailInvalid')
     return
   }
+  if (!password.value) {
+    passwordError.value = t('loginErrPasswordEmpty')
+    return
+  }
   loading.value = true
-  const mockUser = { name: 'Admin', email: email.value.trim(), role: 'admin' }
-  currentUser.value = mockUser
-  authToken.value = 'dev-token'
-  localStorage.setItem('user', JSON.stringify(mockUser))
-  localStorage.setItem('token', 'dev-token')
-  navigate('/live-report')
-  loading.value = false
+  try {
+    await login(email.value.trim(), password.value)
+    navigate('/live-report')
+  } catch (e) {
+    generalError.value = e?.message || t('loginErrLoginFailed')
+  } finally {
+    loading.value = false
+  }
 }
 
 const toggleLang = () => setLang(currentLang.value === 'id' ? 'en' : 'id')
@@ -53,16 +62,28 @@ const flagLabel = computed(() => (currentLang.value === 'id' ? 'ID' : 'EN'))
 
         <div class="panel-inner">
           <h1 class="panel-title">{{ t('loginTitle') }}</h1>
-          <form @submit.prevent="handleContinue" class="login-form" novalidate>
+          <form @submit.prevent="handleLogin" class="login-form" novalidate>
             <label class="field">
               <span class="field-label">{{ t('loginEmail') }}</span>
               <span class="field-box" :class="{ invalid: emailError }">
-                <input type="email" v-model="email" placeholder="name@example.com" @input="emailError = ''" />
+                <input type="email" v-model="email" placeholder="username" autocomplete="username" @input="emailError = ''" />
                 <svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
               </span>
               <span v-if="emailError" class="field-error">{{ emailError }}</span>
             </label>
-            <button type="submit" class="btn-primary" :disabled="loading">{{ loading ? t('loginProcessing') : t('loginContinue') }}</button>
+            <label class="field">
+              <span class="field-label">{{ t('loginPassword') }}</span>
+              <span class="field-box" :class="{ invalid: passwordError }">
+                <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="password" autocomplete="current-password" @input="passwordError = ''" />
+                <button type="button" class="pw-toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                  <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </span>
+              <span v-if="passwordError" class="field-error">{{ passwordError }}</span>
+            </label>
+            <span v-if="generalError" class="field-error">{{ generalError }}</span>
+            <button type="submit" class="btn-primary" :disabled="loading">{{ loading ? t('loginProcessing') : t('loginSubmit') }}</button>
           </form>
           <a href="/" class="back-link" @click.prevent="navigate('/')">← {{ t('loginBack') }}</a>
         </div>
@@ -96,6 +117,8 @@ const flagLabel = computed(() => (currentLang.value === 'id' ? 'ID' : 'EN'))
 .field-box input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: .98rem; min-width: 0; }
 .field-box input::placeholder { color: #5f5f5f; }
 .field-icon { color: #fff; flex-shrink: 0; }
+.pw-toggle { background: transparent; border: none; color: #fff; cursor: pointer; display: flex; align-items: center; padding: 2px; flex-shrink: 0; }
+.pw-toggle:hover { opacity: .75; }
 .field-box.invalid .field-icon { color: #e74c3c; }
 .field-error { font-size: .78rem; color: #ff8a7a; font-weight: 600; }
 .btn-primary { background: #fff; color: #000; border: none; border-radius: 12px; padding: 15px; font-size: .95rem; font-weight: 800; cursor: pointer; transition: opacity .2s, transform .2s; }

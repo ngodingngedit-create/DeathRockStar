@@ -74,6 +74,7 @@ export const t = (key) => {
     color: { id: 'WARNA', en: 'COLOR' },
     quantity: { id: 'JUMLAH', en: 'QUANTITY' },
     addToCart: { id: 'TAMBAH KE KERANJANG', en: 'ADD TO CART' },
+    buyNow: { id: 'BELI SEKARANG', en: 'BUY NOW' },
     chat: { id: 'HUBUNGI', en: 'CHAT' },
     all: { id: 'Semua', en: 'All' },
     clothing: { id: 'Pakaian', en: 'Clothing' },
@@ -228,6 +229,8 @@ export const t = (key) => {
     loginVerify: { id: 'Verifikasi', en: 'Verify' },
     loginErrEmailEmpty: { id: 'Email wajib diisi.', en: 'Email is required.' },
     loginErrEmailInvalid: { id: 'Masukkan alamat email yang valid.', en: 'Enter a valid email address.' },
+    loginErrPasswordEmpty: { id: 'Password wajib diisi.', en: 'Password is required.' },
+    loginErrLoginFailed: { id: 'Email atau password salah.', en: 'Incorrect email or password.' },
     loginErrOtpIncomplete: { id: 'Lengkapi 6 digit kode verifikasi.', en: 'Complete the 6-digit verification code.' },
     loginErrOtpInvalid: { id: 'Kode harus 6 angka.', en: 'Code must be 6 digits.' }
   }

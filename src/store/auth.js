@@ -30,8 +30,10 @@ export const login = async (email, password) => {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.message || 'Email atau password salah.')
-  currentUser.value = data.data || null
-  authToken.value = data.access_token || null
+  const user = data.data?.user || data.data || data.user || null
+  const token = data.access_token || data.token || data.data?.token || data.data?.access_token || null
+  currentUser.value = user
+  authToken.value = token
   localStorage.setItem('user', JSON.stringify(currentUser.value))
   if (authToken.value) localStorage.setItem('token', authToken.value)
   return currentUser.value

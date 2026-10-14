@@ -211,6 +211,21 @@ const handleAddToCart = () => {
   closeQuickView()
 }
 
+const handleBuyNow = () => {
+  if (!selectedProduct.value) return
+  if (!selectedSize.value) {
+    triggerToast(currentLang.value === 'id' ? 'Silakan pilih ukuran terlebih dahulu' : 'Please select a size first', 'error')
+    return
+  }
+  if (selectedQuantity.value === 0) {
+    triggerToast(currentLang.value === 'id' ? 'Silakan tentukan jumlah terlebih dahulu' : 'Please select a quantity first', 'error')
+    return
+  }
+  setCartItemQuantity(selectedProduct.value, selectedSize.value, selectedColor.value, selectedQuantity.value)
+  closeQuickView()
+  navigate('/transaction/merch')
+}
+
 const handleChat = () => {
   alert(currentLang.value === 'id' 
     ? `Menghubungi manajer toko mengenai ${selectedProduct.value.name}...` 
@@ -411,8 +426,8 @@ const handleChat = () => {
 
               <!-- Action Bar (Desktop side-by-side) -->
               <div class="qv-actions desktop-actions">
-                <button 
-                  class="qv-btn-primary" 
+                <button
+                  class="qv-btn-primary"
                   :disabled="selectedProduct.stock <= 0 || selectedQuantity <= 0"
                   :class="{ 'btn-sold-out': selectedProduct.stock <= 0 || selectedQuantity <= 0 }"
                   @click.stop="handleAddToCart"
@@ -425,7 +440,16 @@ const handleChat = () => {
                   </svg>
                   <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
                 </button>
-
+                <button
+                  class="qv-btn-secondary"
+                  :disabled="selectedProduct.stock <= 0 || selectedQuantity <= 0"
+                  @click.stop="handleBuyNow"
+                >
+                  <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>{{ t('buyNow') }}</span>
+                </button>
               </div>
 
             </div>
@@ -433,8 +457,8 @@ const handleChat = () => {
 
           <!-- Sticky Mobile Action Bar -->
           <div class="qv-actions mobile-actions">
-            <button 
-              class="qv-btn-primary" 
+            <button
+              class="qv-btn-primary"
               :disabled="selectedProduct.stock <= 0 || selectedQuantity <= 0"
               :class="{ 'btn-sold-out': selectedProduct.stock <= 0 || selectedQuantity <= 0 }"
               @click.stop="handleAddToCart"
@@ -447,7 +471,13 @@ const handleChat = () => {
               </svg>
               <span>{{ selectedProduct.stock > 0 ? t('addToCart') : t('soldOut') }}</span>
             </button>
-
+            <button
+              class="qv-btn-secondary"
+              :disabled="selectedProduct.stock <= 0 || selectedQuantity <= 0"
+              @click.stop="handleBuyNow"
+            >
+              <span>{{ t('buyNow') }}</span>
+            </button>
           </div>
 
         </div>
@@ -1473,6 +1503,11 @@ const handleChat = () => {
 .qv-btn-secondary:hover {
   border-color: #ffffff;
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.qv-btn-secondary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .btn-icon {

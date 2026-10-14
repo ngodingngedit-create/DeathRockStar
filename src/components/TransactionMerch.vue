@@ -29,10 +29,16 @@ const originData = reactive({
   weight: 0
 })
 
+const COURIER_MARKUP = 4000
 const shippingFee = ref(0)
 const shippingOptions = ref([])
 const selectedShipping = ref(null)
 const isLoadingShipping = ref(false)
+
+const courierDisplayPrice = (opt) => {
+  if (!opt) return 0
+  return (opt.price || opt.cost || 0) + COURIER_MARKUP
+}
 
 const mainErrors = reactive({
   buyerName: '',
@@ -360,7 +366,7 @@ const checkShippingCosts = async () => {
 
 const updateShippingFee = () => {
   if (selectedShipping.value) {
-    shippingFee.value = selectedShipping.value.price || selectedShipping.value.cost || 0
+    shippingFee.value = courierDisplayPrice(selectedShipping.value)
   } else {
     shippingFee.value = 0
   }
@@ -726,7 +732,7 @@ onMounted(() => {
                   <div v-else-if="shippingOptions.length > 0">
                     <select v-model="selectedShipping" @change="updateShippingFee" class="checkout-select-input">
                       <option v-for="(opt, idx) in shippingOptions" :key="idx" :value="opt">
-                        {{ opt.name || opt.courier_name || opt.courier || opt.company }} {{ opt.service || opt.type || '' }} - {{ formatPrice(opt.price || opt.cost || 0) }}
+                        {{ opt.name || opt.courier_name || opt.courier || opt.company }} {{ opt.service || opt.type || '' }} - {{ formatPrice(courierDisplayPrice(opt)) }}
                       </option>
                     </select>
                   </div>

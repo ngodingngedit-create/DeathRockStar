@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, createApp, nextTick } from 'vue'
-import { isLoggedIn, currentUser } from '../store/auth.js'
+import { currentUser } from '../store/auth.js'
 import { t } from '../store/lang.js'
 import ResiDocument, { buildResiData } from './ResiDocument.vue'
 import { jsPDF } from 'jspdf'
