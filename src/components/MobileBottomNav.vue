@@ -1,81 +1,51 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { currentLang } from '../store/lang.js'
-
-// Import assets for search results preview
-import noiseImg from '../assets/images/event_noise_parade.png'
-import southSideImg from '../assets/images/event_south_side.png'
-import undercityImg from '../assets/images/event_undercity.png'
-import teeImg from '../assets/images/merch_tee.png'
-import hoodieImg from '../assets/images/merch_hoodie.png'
-import capImg from '../assets/images/merch_cap.png'
-import bagImg from '../assets/images/merch_bag.png'
 import { t } from '../store/lang.js'
-import { computed } from 'vue'
+import { isAdmin } from '../store/auth.js'
+import { getRoute, listenRouteChange, navigate } from '../router.js'
+import { useProductAutocomplete } from '../composables/useProductAutocomplete.js'
 
-const currentHash = ref(window.location.hash || '#home')
+const currentPath = ref(getRoute())
 const isSearchOpen = ref(false)
 const searchQuery = ref('')
 const searchInput = ref(null)
 
-// Tracks the explicitly clicked tab (to handle Koleksi which doesn't change the hash to #merch)
-const activeTab = ref(window.location.hash || '#home')
+const activeTab = ref(getRoute())
 
-const isTabActive = (href) => {
-  if (href === '#home') {
-    // Active if home tab was clicked, OR if no special tab is active
-    return activeTab.value === '#home' || activeTab.value === '' || activeTab.value === '#'
-  }
-  return activeTab.value === href
-}
+const isTabActive = (href) => activeTab.value === href
 
-const handleTabClick = (href) => {
+const handleTabClick = (href, e) => {
+  if (e) e.preventDefault()
   activeTab.value = href
-  if (href === '#merch') {
-    // Koleksi scrolls to the merch section on the home page
-    window.location.hash = '#home'
-    setTimeout(() => {
+  if (href === 'collection') {
+    if (currentPath.value !== '/') {
+      navigate('/')
+      setTimeout(() => {
+        const el = document.getElementById('merch')
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+      }, 150)
+    } else {
       const el = document.getElementById('merch')
       if (el) el.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+    }
   } else {
-    window.location.hash = href
+    navigate(href)
   }
 }
 
-const searchEvents = [
-  { id: 1, slug: 'noise-parade-2026', title: 'NOISE PARADE 2026', venue: 'Live House, Jakarta', category: 'LIVE HOUSE', image: noiseImg },
-  { id: 2, slug: 'south-side-fest', title: 'SOUTH SIDE FEST', venue: 'Parkir Timur Senayan, Jakarta', category: 'FESTIVAL', image: southSideImg },
-  { id: 3, slug: 'undercity-gigs', title: 'UNDERCITY GIGS', venue: 'Ruang Bawah Tanah, Bandung', category: 'UNDERGROUND', image: undercityImg }
-]
+const handleSearchNav = (e, href) => {
+  if (e) e.preventDefault()
+  isSearchOpen.value = false
+  navigate(href)
+}
 
-const searchProducts = [
-  { id: 1, name: 'DRS LOGO TEE', price: 'Rp 149.000', category: 'Pakaian', image: teeImg },
-  { id: 2, name: 'DRS HOODIE', price: 'Rp 299.000', category: 'Pakaian', image: hoodieImg },
-  { id: 3, name: 'DRS CAP', price: 'Rp 129.000', category: 'Aksesoris', image: capImg },
-  { id: 4, name: 'DRS TOTE BAG', price: 'Rp 99.000', category: 'Aksesoris', image: bagImg }
-]
+const { results: merchResults, loading: merchLoading, search: searchMerch } = useProductAutocomplete()
+watch(searchQuery, (q) => searchMerch(q))
 
-const filteredSearchEvents = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const query = searchQuery.value.toLowerCase().trim()
-  return searchEvents.filter(e =>
-    e.title.toLowerCase().includes(query) ||
-    e.venue.toLowerCase().includes(query) ||
-    e.category.toLowerCase().includes(query)
-  )
-})
+const filteredSearchProducts = computed(() => merchResults.value)
+const filteredSearchEvents = computed(() => [])
 
-const filteredSearchProducts = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const query = searchQuery.value.toLowerCase().trim()
-  return searchProducts.filter(p =>
-    p.name.toLowerCase().includes(query) ||
-    p.category.toLowerCase().includes(query)
-  )
-})
-
-import { watch } from 'vue'
 watch(isSearchOpen, (open) => {
   if (open) {
     setTimeout(() => { searchInput.value?.focus() }, 100)
@@ -83,13 +53,12 @@ watch(isSearchOpen, (open) => {
 })
 
 onMounted(() => {
-  window.addEventListener('hashchange', () => {
-    const hash = window.location.hash || '#home'
-    currentHash.value = hash
-    // Sync activeTab with URL changes caused externally (e.g. browser back/forward)
-    // But only for routes that are not #merch (since Koleksi sets hash to #home)
-    if (hash !== '#home' || activeTab.value !== '#merch') {
-      activeTab.value = hash
+  currentPath.value = getRoute()
+  activeTab.value = getRoute()
+  listenRouteChange((path) => {
+    currentPath.value = path
+    if (path !== '/' || activeTab.value !== 'collection') {
+      activeTab.value = path
     }
   })
 })
@@ -102,10 +71,10 @@ onMounted(() => {
 
       <!-- Beranda (Home) -->
       <a
-        href="#home"
+        href="/"
         class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#home') }"
-        @click="handleTabClick('#home')"
+        :class="{ 'active': isTabActive('/') }"
+        @click="handleTabClick('/', $event)"
       >
         <div class="active-indicator"></div>
         <div class="tab-icon-wrapper">
@@ -114,12 +83,13 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Beranda' : 'Home' }}</span>
       </a>
 
-      <!-- Koleksi (Collection) -->
+      <!-- Koleksi (user only) -->
       <a
-        href="#home"
+        v-if="!isAdmin"
+        href="/"
         class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#merch') }"
-        @click="handleTabClick('#merch')"
+        :class="{ 'active': isTabActive('collection') }"
+        @click="handleTabClick('collection', $event)"
       >
         <div class="active-indicator"></div>
         <div class="tab-icon-wrapper">
@@ -133,31 +103,12 @@ onMounted(() => {
         <span class="tab-label">{{ currentLang === 'id' ? 'Koleksi' : 'Collection' }}</span>
       </a>
 
-      <!-- Event -->
-      <a
-        href="#events-page"
-        class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#events-page') }"
-        @click="handleTabClick('#events-page')"
-      >
-        <div class="active-indicator"></div>
-        <div class="tab-icon-wrapper">
-          <svg class="tab-svg-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-        </div>
-        <span class="tab-label">{{ currentLang === 'id' ? 'Event' : 'Events' }}</span>
-      </a>
-
       <!-- Toko (Store) -->
       <a
-        href="#merch-page"
+        href="/merch"
         class="bottom-nav-item"
-        :class="{ 'active': isTabActive('#merch-page') }"
-        @click="handleTabClick('#merch-page')"
+        :class="{ 'active': isTabActive('/merch') }"
+        @click="handleTabClick('/merch', $event)"
       >
         <div class="active-indicator"></div>
         <div class="tab-icon-wrapper">
@@ -227,9 +178,9 @@ onMounted(() => {
               <a
                 v-for="event in filteredSearchEvents"
                 :key="event.id"
-                :href="'#event-detail-' + event.slug"
+                :href="'/event/' + event.slug"
                 class="msearch-card"
-                @click="isSearchOpen = false"
+                @click.prevent="handleSearchNav($event, '/event/' + event.slug)"
               >
                 <div class="msearch-card-img" :style="{ backgroundImage: `url(${event.image})` }"></div>
                 <div class="msearch-card-info">
@@ -242,15 +193,18 @@ onMounted(() => {
           </div>
 
           <!-- Products -->
-          <div v-if="filteredSearchProducts.length > 0" class="msearch-section">
+          <div v-if="merchLoading" class="msearch-empty">
+            <p>{{ currentLang === 'id' ? 'Mencari merch...' : 'Searching merch...' }}</p>
+          </div>
+          <div v-else-if="filteredSearchProducts.length > 0" class="msearch-section">
             <h4 class="msearch-section-title">MERCHANDISE</h4>
             <div class="msearch-cards">
               <a
                 v-for="product in filteredSearchProducts"
                 :key="product.id"
-                href="#merch-page"
+                href="/merch"
                 class="msearch-card"
-                @click="isSearchOpen = false"
+                @click.prevent="handleSearchNav($event, '/merch')"
               >
                 <img :src="product.image" :alt="product.name" class="msearch-card-img-tag" />
                 <div class="msearch-card-info">
@@ -263,7 +217,7 @@ onMounted(() => {
           </div>
 
           <!-- No results -->
-          <div v-if="filteredSearchEvents.length === 0 && filteredSearchProducts.length === 0" class="msearch-empty">
+          <div v-else class="msearch-empty">
             <p>{{ currentLang === 'id' ? 'Tidak ada hasil yang cocok.' : 'No matches found.' }}</p>
           </div>
 

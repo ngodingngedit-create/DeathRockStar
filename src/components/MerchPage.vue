@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { t, currentLang } from '../store/lang.js'
-import { addItem, decrementItem, getItemQuantity, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
+import { addItem, getVariantQuantity, setCartItemQuantity } from '../store/cart.js'
 
 // Import local image assets
 import teeImg from '../assets/images/merch_tee.png'
@@ -27,7 +27,7 @@ onMounted(async () => {
     const response = await fetch('https://api.kolektix.com/api/product?creator_id=146')
     const result = await response.json()
     if (result.data) {
-      products.value = result.data.map(p => {
+      products.value = result.data.filter((p) => p.product_status_id !== 3).map(p => {
         const varians = p.product_varian || []
         const stock = varians.reduce((acc, v) => acc + (v.stock_qty || 0), 0) || p.qty || 0
         const sizes = varians.length > 0 ? varians.map(v => v.varian_name) : ['One Size']
@@ -46,8 +46,9 @@ onMounted(async () => {
           sizes: sizes,
           colors: [{ name: 'Default', hex: '#000000' }], // fallback color
           images: p.product_image?.map(img => img.image_url) || [],
-          creatorName: p.has_creator?.name || p.creator?.name || 'mocca',
+          creatorName: (() => { const n = p.has_creator?.name || p.creator?.name || 'mocca'; return String(n).toLowerCase() === 'eric' ? 'Death Rock Star' : n })(), // ponytail: API creator 146 masih bernama eric, override display saja; hapus saat backend update nama.
           creatorImage: p.has_creator?.image_url || p.creator?.image_url || '/logo_mocca.png',
+          storeName: p.has_store_location?.store_name || 'Death Rock Star Shop',
           weight: varians.length > 0 ? varians[0].weight : p.weight,
           variant_id: varians.length > 0 ? varians[0].id : null,
           product_id: p.id
@@ -123,7 +124,7 @@ const openQuickView = async (product) => {
 
   if (product.slug) {
     try {
-      const response = await fetch(`https://api.kolektix.my.id/api/product/${product.slug}`)
+      const response = await fetch(`https://api.kolektix.com/api/product/${product.slug}`)
       const result = await response.json()
       const detail = result.data
       
@@ -295,48 +296,22 @@ const handleChat = () => {
           <!-- Product Details -->
           <div class="product-details">
             <h3 class="product-name">{{ product.name }}</h3>
-
-            <div class="price-row">
-              <p class="product-price">{{ product.price }}</p>
+            <div class="store-row">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="store-icon">
+                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+              </svg>
+              <span>{{ product.storeName }}</span>
             </div>
-            
-            <!-- Quantity controls -->
-            <div class="quantity-row">
-              <div class="quantity-controls" @click.stop>
-                <button 
-                  class="qty-btn minus" 
-                  @click="decrementItem(product.id)"
-                  :disabled="getItemQuantity(product.id) === 0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4" />
-                  </svg>
-                </button>
-                <span class="qty-value">{{ getItemQuantity(product.id) }}</span>
-                <button 
-                  class="qty-btn plus" 
-                  @click="addItem(product)"
-                  :disabled="product.stock <= 0 || getItemQuantity(product.id) >= product.stock"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="qty-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Divider Line -->
             <div class="product-divider"></div>
-
-            <!-- Creator Section -->
             <div class="product-details-bottom">
               <div class="partner-store">
                 <img :src="product.creatorImage" :alt="product.creatorName + ' Logo'" class="partner-logo" />
                 <div class="partner-info">
-                  <span class="partner-label">{{ t('partnerStore') }}</span>
+                  <span class="partner-label">{{ t('providedBy') }}</span>
                   <span class="partner-name">{{ product.creatorName }}</span>
                 </div>
               </div>
+              <p class="product-price">{{ product.price }}</p>
             </div>
           </div>
         </div>
@@ -783,112 +758,84 @@ const handleChat = () => {
 
 .product-name {
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
   color: #FFFFFF;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.price-row {
+.store-row {
   display: flex;
-  justify-content: flex-end;
-  width: 100%;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .product-price {
   font-family: var(--font-body);
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #ffffff;
   margin: 0;
   white-space: nowrap;
 }
 
-.quantity-row {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.quantity-controls {
-  display: flex;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background-color: #151515;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.qty-btn {
-  background: none;
-  border: none;
-  color: #FFFFFF;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.qty-btn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.qty-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.qty-icon {
-  width: 12px;
-  height: 12px;
-}
-
-.qty-value {
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #ffffff;
-  width: 28px;
-  text-align: center;
-  user-select: none;
-}
-
 .product-divider {
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.05);
+  height: 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
   width: 100%;
 }
 
 .product-details-bottom {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   width: 100%;
 }
 
 .partner-store {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .partner-logo {
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  filter: grayscale(100%) contrast(1.5) brightness(1.2);
+  flex-shrink: 0;
 }
 
 .partner-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .partner-label {
@@ -897,15 +844,19 @@ const handleChat = () => {
   font-weight: 500;
   color: var(--text-muted);
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .partner-name {
   font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 740;
+  font-size: 0.85rem;
+  font-weight: 800;
   color: #FFFFFF;
   line-height: 1.2;
-  text-transform: lowercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .no-products {
@@ -1560,6 +1511,33 @@ const handleChat = () => {
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
+  }
+
+  .product-details-bottom {
+    gap: 0.5rem;
+  }
+
+  .partner-store {
+    gap: 0.4rem;
+  }
+
+  .partner-logo {
+    width: 24px;
+    height: 24px;
+  }
+
+  .partner-label {
+    font-size: 0.6rem;
+  }
+
+  .partner-name {
+    font-size: 0.72rem;
+    max-width: 110px;
+  }
+
+  .product-price {
+    font-size: 0.85rem;
+    font-weight: 700;
   }
 }
 

@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { t, currentLang } from '../store/lang.js'
 import { cartItems, totalCartPrice, formatPrice, totalItemsCount } from '../store/cart.js'
+import { navigate } from '../router.js'
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBxZekg89Ut1U72fFpQldJAenvgTy197As"
 const GOOGLE_MAPS_MAP_ID = "795838f77e7bb079c78f5aac"
@@ -121,7 +122,7 @@ const fetchOriginData = async () => {
   const firstItem = cartItems.value[0]
   if (firstItem && firstItem.slug) {
     try {
-      const response = await fetch(`https://api.kolektix.my.id/api/product/${firstItem.slug}`)
+      const response = await fetch(`https://api.kolektix.com/api/product/${firstItem.slug}`)
       const result = await response.json()
       if (result.data) {
         originData.admin_fee = result.data.admin_fee || 0
@@ -141,7 +142,7 @@ const fetchOriginData = async () => {
 
 const fetchProvinces = async () => {
   try {
-    const res = await fetch('https://api.kolektix.my.id/api/province')
+    const res = await fetch('https://api.kolektix.com/api/province')
     const result = await res.json()
     if (result.data) {
       provinces.value = result.data
@@ -157,7 +158,7 @@ const fetchCities = async (provId) => {
     return
   }
   try {
-    const res = await fetch(`https://api.kolektix.my.id/api/city?province_id=${provId}`)
+    const res = await fetch(`https://api.kolektix.com/api/city?province_id=${provId}`)
     const result = await res.json()
     if (result.data) {
       cities.value = result.data
@@ -330,7 +331,7 @@ const checkShippingCosts = async () => {
   }
   
   try {
-    const res = await fetch('https://api.kolektix.my.id/api/shipping/cek-all-ongkir', {
+    const res = await fetch('https://api.kolektix.com/api/shipping/cek-all-ongkir', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -395,7 +396,7 @@ const applyVoucher = async () => {
   }
   
   try {
-    const res = await fetch('https://api.kolektix.my.id/api/vouchers-merch/validate', {
+    const res = await fetch('https://api.kolektix.com/api/vouchers-merch/validate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -457,7 +458,7 @@ const grandTotal = computed(() => {
 })
 
 const goBack = () => {
-  window.location.hash = '#merch-page'
+  navigate('/merch')
 }
 
 const isSubmitting = ref(false)
@@ -563,15 +564,24 @@ const handleCheckoutSubmit = async () => {
       body: JSON.stringify(payload)
     })
     const result = await res.json()
-    
-    if (res.ok && result.data && result.data.xendit_url) {
-      alert(currentLang.value === 'id' ? 'Pesanan berhasil dibuat! Anda akan dialihkan ke pembayaran.' : 'Order created! Redirecting to payment.')
+    console.log('Order product response:', result)
+
+    // Extract xendit URL from nested structure: data.orders[0].xendit_url or data.xendit[0].invoice_url
+    const xenditUrl = result.data?.orders?.[0]?.xendit_url || 
+                      result.data?.xendit?.[0]?.invoice_url || 
+                      result.data?.xendit_url || 
+                      result.xendit_url || 
+                      result.data?.payment_url || 
+                      result.data?.invoice_url || 
+                      result.payment_url || 
+                      result.invoice_url
+
+    if (xenditUrl) {
       cartItems.value = [] // clear cart
-      window.location.href = result.data.xendit_url
-    } else if (result.xendit_url) {
-      alert(currentLang.value === 'id' ? 'Pesanan berhasil dibuat! Anda akan dialihkan ke pembayaran.' : 'Order created! Redirecting to payment.')
-      cartItems.value = [] // clear cart
-      window.location.href = result.xendit_url
+      window.location.href = xenditUrl
+    } else if (res.ok && (result.status === true || result.status === 200 || result.status === 201 || result.message === 'Order berhasil dibuat')) {
+      alert(currentLang.value === 'id' ? 'Pesanan berhasil dibuat!' : 'Order created successfully!')
+      cartItems.value = []
     } else {
       console.error('Submission failed:', result)
       alert(currentLang.value === 'id' ? 'Gagal membuat pesanan: ' + (result.message || 'Terjadi kesalahan') : 'Failed to create order: ' + (result.message || 'An error occurred'))
@@ -586,7 +596,7 @@ const handleCheckoutSubmit = async () => {
 
 onMounted(() => {
   if (cartItems.value.length === 0) {
-    window.location.hash = '#merch-page'
+    navigate('/merch')
   }
   fetchOriginData()
 })

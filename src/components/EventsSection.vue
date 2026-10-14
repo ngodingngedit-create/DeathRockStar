@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { t, currentLang } from '../store/lang.js'
+import { navigate } from '../router.js'
 
 const events = ref([])
 
@@ -50,7 +51,7 @@ onMounted(async () => {
           category: item.has_event_format?.name?.toUpperCase() || 'EVENT',
           price: price,
           isFavorite: false,
-          ticketLink: '#events'
+          ticketLink: '/events'
         };
       });
     }
@@ -87,7 +88,7 @@ const formatPrice = (price) => {
 }
 
 const navigateToDetail = (slug) => {
-  window.location.hash = `#event-detail-${slug}`
+  navigate('/event/' + slug)
 }
 </script>
 
@@ -100,7 +101,7 @@ const navigateToDetail = (slug) => {
           <span class="section-tag">{{ t('events') }}</span>
           <h2 class="section-title">{{ t('eventsTitle') }}</h2>
         </div>
-        <a href="#events-page" class="view-all-link hover-underline">
+        <a href="/events" class="view-all-link hover-underline" @click.prevent="navigate('/events')">
           {{ t('viewAllEvents') }} 
           <svg class="link-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -178,7 +179,7 @@ const navigateToDetail = (slug) => {
                 <span class="price-label">{{ t('mulaiDari') }}</span>
                 <span class="price-amount">Rp {{ formatPrice(event.price) }}</span>
               </div>
-              <a :href="'#event-detail-' + event.slug" class="pilih-tiket-btn" @click.prevent="navigateToDetail(event.slug)">
+              <a :href="'/event/' + event.slug" class="pilih-tiket-btn" @click.prevent="navigateToDetail(event.slug)">
                 <span>{{ t('pilihTiket') }}</span>
                 <svg class="btn-arrow-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />

@@ -11,7 +11,7 @@ import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
-
+  appType: 'spa',
   preview: {
     host: "0.0.0.0",
     port: 4010,
