@@ -554,7 +554,7 @@ const handleCheckoutSubmit = async () => {
 
   isSubmitting.value = true
   try {
-    const res = await fetch('https://api.kolektix.my.id/api/transaction-merch', {
+    const res = await fetch('https://api.kolektix.com/api/order-product', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
